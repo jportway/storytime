@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.env
+.env.local
+
+# Cooper's stories, her writing profile, and cached audio are personal
+# and machine-local. They should never be committed.
+data/
+!data/.gitkeep
+
+# TTS cache
+server/.cache/
+
+*.log
+.DS_Store
