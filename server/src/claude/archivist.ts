@@ -34,7 +34,16 @@ const character = z.object({
   secrets: z.array(z.string()),
 });
 
-const deltaSchema = z.object({
+// Split into three schemas rather than one big one: a single structured-
+// output call covering characters+places+things compiles to a constrained-
+// decoding grammar too large for the API ("The compiled grammar is too
+// large"). Measured directly against the live API: newCharacters+
+// characterUpdates alone is fine, newPlaces+newThings+thingUpdates alone is
+// fine, but the two combined (let alone all five sections in one call) tips
+// over the limit. So characters, world objects, and narrative are three
+// independent reads of the same beat text, run as parallel calls.
+
+const characterSchema = z.object({
   newCharacters: z.array(character),
   characterUpdates: z.array(
     z.object({
@@ -51,6 +60,9 @@ const deltaSchema = z.object({
       newSecrets: z.array(z.string()),
     }),
   ),
+});
+
+const worldObjectSchema = z.object({
   newPlaces: z.array(
     z.object({
       id: z.string(),
@@ -82,6 +94,9 @@ const deltaSchema = z.object({
       newPlaceId: z.string().nullable(),
     }),
   ),
+});
+
+const narrativeSchema = z.object({
   newThreads: z.array(
     z.object({
       id: z.string(),
@@ -102,18 +117,25 @@ const deltaSchema = z.object({
 });
 
 /** Strip the nulls the schema needs but our domain types express as absence. */
-function normalise(raw: z.infer<typeof deltaSchema>): BibleDelta {
-  const drop = <T extends Record<string, unknown>>(o: T): T =>
-    Object.fromEntries(
-      Object.entries(o).filter(([, v]) => v !== null),
-    ) as T;
+function dropNulls<T extends Record<string, unknown>>(o: T): T {
+  return Object.fromEntries(
+    Object.entries(o).filter(([, v]) => v !== null),
+  ) as T;
+}
 
+function normaliseCharacters(raw: z.infer<typeof characterSchema>): Partial<BibleDelta> {
   return {
     ...raw,
-    characterUpdates: raw.characterUpdates.map(drop),
-    newThings: raw.newThings.map(drop),
-    thingUpdates: raw.thingUpdates.map(drop),
-  } as BibleDelta;
+    characterUpdates: raw.characterUpdates.map(dropNulls),
+  } as Partial<BibleDelta>;
+}
+
+function normaliseWorldObjects(raw: z.infer<typeof worldObjectSchema>): Partial<BibleDelta> {
+  return {
+    ...raw,
+    newThings: raw.newThings.map(dropNulls),
+    thingUpdates: raw.thingUpdates.map(dropNulls),
+  } as Partial<BibleDelta>;
 }
 
 /**
@@ -142,22 +164,43 @@ export async function extractDelta(
       : '# This was the opening beat. Cooper did not direct it.',
   ].join('\n');
 
-  try {
-    const response = await anthropic.messages.parse({
-      model: config.models.archivist,
-      max_tokens: 4000,
-      system: loadPrompt('archivist'),
-      messages: [{ role: 'user', content: userContent }],
-      output_config: { format: zodOutputFormat(deltaSchema) },
-    });
-    recordUsage(response.usage);
+  const system = loadPrompt('archivist');
 
-    return response.parsed_output ? normalise(response.parsed_output) : null;
-  } catch (err) {
-    // Bookkeeping must never be able to break the game. If the archivist
-    // fails, the story keeps its previous bible and carries on; the model's
-    // own conversation history still holds everything that happened.
-    console.error('[archivist] failed, keeping previous bible:', err);
-    return null;
+  // Bookkeeping must never be able to break the game. If one section of the
+  // archivist fails, the story keeps its previous state for that section and
+  // carries on; the model's own conversation history still holds everything
+  // that happened.
+  async function section<T>(
+    label: string,
+    schema: z.ZodType<T>,
+  ): Promise<T | null> {
+    try {
+      const response = await anthropic.messages.parse({
+        model: config.models.archivist,
+        max_tokens: 2000,
+        system,
+        messages: [{ role: 'user', content: userContent }],
+        output_config: { format: zodOutputFormat(schema) },
+      });
+      recordUsage(response.usage);
+      return response.parsed_output ?? null;
+    } catch (err) {
+      console.error(`[archivist] ${label} delta failed:`, err);
+      return null;
+    }
   }
+
+  const [characters, worldObjects, narrative] = await Promise.all([
+    section('character', characterSchema).then(
+      (raw) => raw && normaliseCharacters(raw),
+    ),
+    section('world object', worldObjectSchema).then(
+      (raw) => raw && normaliseWorldObjects(raw),
+    ),
+    section('narrative', narrativeSchema),
+  ]);
+
+  if (!characters && !worldObjects && !narrative) return null;
+
+  return { ...characters, ...worldObjects, ...narrative } as BibleDelta;
 }
