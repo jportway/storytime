@@ -223,14 +223,14 @@ export interface OwlHelp {
   original: string;
   fixed: string;
   kind: HelpKind;
-  /** What the owl says out loud. Warm, short, curious — never corrective. */
+  /** What the owl says out loud. Dry, short, Frank's voice — never corrective. */
   spoken: string;
   board: BoardCard;
 }
 
 export interface OwlResponse {
-  /** Always present, and always about a specific word she chose. */
-  praise: string;
+  /** Rare and earned — null most of the time. Never generic. */
+  praise: string | null;
   /** At most two. Never a list. */
   helps: OwlHelp[];
   /** A leading question, only when she's stuck or very brief. */

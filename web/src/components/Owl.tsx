@@ -38,7 +38,7 @@ export function Owl({
 
     let cancelled = false;
     const run = async () => {
-      await say(response.praise);
+      if (response.praise) await say(response.praise);
       if (cancelled) return;
 
       for (const help of response.helps) {

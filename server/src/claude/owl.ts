@@ -12,8 +12,9 @@ import {
 const owlSchema = z.object({
   praise: z
     .string()
+    .nullable()
     .describe(
-      'Specific praise naming an actual word or idea she chose. Never generic.',
+      'Null almost always. Only set this if an idea genuinely surprised you or the sentence just landed well as a finished thought — never for an unfinished draft, never routinely. Specific and short when set, naming the actual word or idea. Never generic.',
     ),
   helps: z
     .array(
