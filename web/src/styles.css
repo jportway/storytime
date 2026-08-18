@@ -1,0 +1,557 @@
+/*
+ * Design notes, since they're deliberate rather than decorative:
+ *
+ * - Warm off-white background, never pure white. Less glare, and a page that
+ *   looks like paper rather than a test.
+ * - Generous line height and letter spacing throughout. This is the single
+ *   cheapest readability win for a child who finds reading effortful.
+ * - Nothing is red. Spelling marks are a soft amber dotted underline, never
+ *   a red squiggle — she has seen enough red pen.
+ * - Big tap targets, big text. She may well be on a laptop trackpad.
+ */
+
+:root {
+  --paper: #faf6ef;
+  --ink: #2c2519;
+  --ink-soft: #6b6152;
+  --accent: #b5651d;
+  --accent-soft: #e8c9a0;
+  --owl: #8b6b4a;
+  --mark: #d9a441;
+  --yours: #3f7d58;
+  --panel-bg: #fffdf8;
+  --shadow: 0 2px 10px rgba(70, 55, 35, 0.09);
+  --radius: 14px;
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Lexend', 'Verdana', 'Trebuchet MS', system-ui, sans-serif;
+  font-size: 19px;
+  line-height: 1.7;
+  letter-spacing: 0.012em;
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  border: none;
+  border-radius: 10px;
+  padding: 0.55em 1.1em;
+  background: var(--accent-soft);
+  color: var(--ink);
+  transition: transform 0.08s ease, filter 0.15s ease;
+}
+
+button:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* ---------------------------------------------------------------- welcome */
+
+.welcome {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  text-align: center;
+}
+
+.welcome h1 {
+  font-size: 3rem;
+  margin: 0;
+  color: var(--accent);
+}
+
+.start {
+  margin-top: 1rem;
+  font-size: 1.2rem;
+  padding: 0.8em 1.6em;
+  background: var(--accent);
+  color: #fff;
+}
+
+/* -------------------------------------------------------------- structure */
+
+.app {
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1.2rem;
+  border-bottom: 2px solid var(--accent-soft);
+}
+
+.topbar h1 {
+  font-size: 1.3rem;
+  margin: 0;
+  color: var(--accent);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.whats-new {
+  font-size: 0.85rem;
+  color: var(--yours);
+  background: #eaf3ed;
+  padding: 0.25em 0.75em;
+  border-radius: 999px;
+  animation: pop 0.4s ease;
+}
+
+.story {
+  overflow-y: auto;
+  padding: 1.5rem 1.2rem 2rem;
+}
+
+/* ------------------------------------------------------------------ story */
+
+.beat {
+  margin-bottom: 2rem;
+}
+
+.your-idea {
+  margin: 0 0 1rem;
+  padding: 0.6rem 1rem;
+  background: #eaf3ed;
+  border-left: 4px solid var(--yours);
+  border-radius: 0 10px 10px 0;
+  font-style: italic;
+  color: #2f5c42;
+}
+
+.your-idea-label {
+  display: block;
+  font-style: normal;
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--yours);
+  margin-bottom: 0.15rem;
+}
+
+.panel {
+  background: var(--panel-bg);
+  border: 2px solid #e7dcc8;
+  border-radius: var(--radius);
+  padding: 1rem 1.2rem;
+  margin-bottom: 0.9rem;
+  box-shadow: var(--shadow);
+  animation: rise 0.35s ease both;
+}
+
+.narration {
+  margin: 0 0 0.5rem;
+}
+
+.dialogue {
+  margin: 0.35rem 0;
+}
+
+.speaker {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.09em;
+  color: var(--accent);
+  margin-right: 0.5rem;
+  vertical-align: 0.1em;
+}
+
+.sfx {
+  margin: 0.6rem 0 0;
+  font-weight: 800;
+  font-size: 1.4rem;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  transform: rotate(-2deg);
+}
+
+.writing-indicator {
+  color: var(--ink-soft);
+  font-style: italic;
+}
+
+.error {
+  background: #fdf0e4;
+  border: 2px solid var(--accent-soft);
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+}
+
+/* --------------------------------------------------------------- composer */
+
+.composer {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1rem;
+  padding: 1rem 1.2rem 1.4rem;
+  border-top: 2px solid var(--accent-soft);
+  background: var(--paper);
+}
+
+.fork {
+  margin: 0 0 0.7rem;
+  font-size: 1.08rem;
+  font-weight: 600;
+}
+
+.writing-field {
+  position: relative;
+}
+
+/*
+ * The mirror layer and the textarea must render text identically, or the
+ * underlines drift away from the words they belong to.
+ */
+.writing-mirror,
+.writing-input {
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: 1.7;
+  padding: 0.8rem 1rem;
+  border: 2px solid #ded2bb;
+  border-radius: var(--radius);
+  width: 100%;
+  min-height: 5.5rem;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+.writing-mirror {
+  position: absolute;
+  inset: 0;
+  color: transparent;
+  overflow: hidden;
+  pointer-events: none;
+  border-color: transparent;
+}
+
+.writing-input {
+  position: relative;
+  background: transparent;
+  color: var(--ink);
+  resize: vertical;
+  display: block;
+}
+
+.writing-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.writing-field::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--panel-bg);
+  border-radius: var(--radius);
+}
+
+/* A quiet "worth a look" — not a red squiggle, not a mark out of ten. */
+.spell-mark {
+  background: none;
+  color: transparent;
+  border-bottom: 2px dotted var(--mark);
+  padding-bottom: 1px;
+}
+
+.spell-low {
+  border-bottom-style: dotted;
+  opacity: 0.45;
+}
+
+.spell-kind-reversal {
+  border-bottom-color: #7ba7c9;
+}
+
+.writing-actions {
+  margin-top: 0.7rem;
+  display: flex;
+  gap: 0.6rem;
+}
+
+.send {
+  background: var(--accent);
+  color: #fff;
+  font-size: 1.05rem;
+  padding: 0.6em 1.5em;
+}
+
+/* -------------------------------------------------------------------- owl */
+
+.owl-area {
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.owl {
+  background: none;
+  padding: 0;
+  border-radius: 50%;
+  line-height: 0;
+}
+
+.owl-thinking {
+  animation: bob 1.1s ease-in-out infinite;
+}
+
+.owl-board {
+  width: 100%;
+  min-height: 3rem;
+  text-align: center;
+}
+
+.owl-praise {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--yours);
+  animation: pop 0.3s ease;
+}
+
+.owl-nudge {
+  margin: 0.4rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.board-card {
+  background: var(--panel-bg);
+  border: 2px solid var(--accent-soft);
+  border-radius: var(--radius);
+  padding: 0.8rem;
+  animation: pop 0.3s ease;
+}
+
+.board-word {
+  font-size: 2.4rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.4rem;
+}
+
+.board-letter {
+  transition: color 0.15s ease, transform 0.15s ease;
+  display: inline-block;
+}
+
+.board-letter.tricky {
+  color: var(--accent);
+}
+
+.board-letter.lit {
+  color: var(--yours);
+  transform: translateY(-5px) scale(1.18);
+}
+
+.board-accept,
+.board-dismiss {
+  font-size: 0.85rem;
+  margin: 0.2rem 0.15rem 0;
+}
+
+.board-dismiss {
+  background: transparent;
+  color: var(--ink-soft);
+  text-decoration: underline;
+}
+
+.mnemonic-letter {
+  font-size: 22px;
+  font-weight: 800;
+  fill: var(--accent);
+}
+
+.mnemonic-word {
+  font-size: 15px;
+  font-weight: 700;
+  fill: var(--ink-soft);
+  letter-spacing: 2px;
+}
+
+.mnemonic-caption {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  margin: 0.2rem 0 0;
+  line-height: 1.45;
+}
+
+/* ----------------------------------------------------------------- drawer */
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 92vw);
+  background: var(--panel-bg);
+  border-left: 2px solid var(--accent-soft);
+  box-shadow: -6px 0 24px rgba(70, 55, 35, 0.14);
+  overflow-y: auto;
+  padding: 1.2rem;
+  animation: slide 0.25s ease;
+}
+
+.drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.drawer-close {
+  background: none;
+  font-size: 1.6rem;
+  line-height: 1;
+  padding: 0 0.3em;
+}
+
+.credit {
+  background: #eaf3ed;
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+  margin-bottom: 1.2rem;
+}
+
+.credit h3,
+.credit p {
+  margin: 0 0 0.35rem;
+}
+
+.credit-big {
+  font-size: 1.25rem;
+}
+
+.credit strong {
+  color: var(--yours);
+}
+
+.who-card {
+  border-bottom: 1px solid #ece2ce;
+  padding: 0.7rem 0;
+}
+
+.who-card h4 {
+  margin: 0 0 0.2rem;
+  font-size: 1.05rem;
+}
+
+.yours {
+  margin-left: 0.5rem;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--yours);
+  background: #dcece2;
+  padding: 0.15em 0.55em;
+  border-radius: 999px;
+}
+
+.who-traits,
+.who-wants,
+.who-status {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+
+.who-gone {
+  opacity: 0.6;
+}
+
+.threads {
+  margin: 0;
+  padding-left: 1.2rem;
+  font-size: 0.92rem;
+}
+
+/* ------------------------------------------------------------- animations */
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+}
+
+@keyframes bob {
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes slide {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (max-width: 780px) {
+  .composer {
+    grid-template-columns: 1fr;
+  }
+
+  .owl-area {
+    width: 100%;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .owl-board {
+    text-align: left;
+  }
+}
