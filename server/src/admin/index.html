@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Storytime — bible editor</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    font: 14px/1.4 -apple-system, system-ui, sans-serif;
+    background: #1a1a1e;
+    color: #e4e4e8;
+    margin: 0;
+    padding: 24px 32px 80px;
+  }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #9a9aa5;
+    margin: 32px 0 10px;
+    border-bottom: 1px solid #333338;
+    padding-bottom: 6px;
+  }
+  .sub { color: #8a8a95; margin: 0 0 20px; font-size: 12px; }
+  select, input[type=text], textarea {
+    background: #26262c;
+    border: 1px solid #3a3a42;
+    color: #e4e4e8;
+    border-radius: 5px;
+    padding: 5px 8px;
+    font: inherit;
+    width: 100%;
+  }
+  textarea { resize: vertical; min-height: 42px; }
+  label {
+    display: block;
+    font-size: 11px;
+    color: #9a9aa5;
+    margin-bottom: 2px;
+    margin-top: 8px;
+  }
+  label:first-child { margin-top: 0; }
+  button {
+    background: #34343c;
+    border: 1px solid #46464f;
+    color: #e4e4e8;
+    border-radius: 5px;
+    padding: 5px 12px;
+    font: inherit;
+    cursor: pointer;
+  }
+  button:hover { background: #3e3e47; }
+  button.primary { background: #3a5a9a; border-color: #4a6aad; }
+  button.primary:hover { background: #4468ad; }
+  button.danger { background: #5a2e2e; border-color: #6e3838; }
+  button.danger:hover { background: #6e3838; }
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    background: #1a1a1e;
+    padding: 12px 0;
+    z-index: 10;
+    border-bottom: 1px solid #2a2a30;
+  }
+  .topbar select { width: auto; min-width: 220px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 8px 20px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
+  .card {
+    background: #212127;
+    border: 1px solid #333339;
+    border-radius: 8px;
+    padding: 14px 16px 16px;
+    margin-bottom: 12px;
+  }
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .card-head strong { font-size: 13px; }
+  .rel-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 2fr auto;
+    gap: 6px;
+    align-items: end;
+    margin-top: 6px;
+  }
+  .rel-row label { margin-top: 0; }
+  .add-row { margin-top: 14px; }
+  .status { font-size: 12px; margin-left: 8px; }
+  .status.ok { color: #6fbf73; }
+  .status.err { color: #e07a7a; }
+  .hint { color: #6f6f78; font-size: 11px; margin-top: 3px; }
+  .chip-list { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+  .chip-list label { display: flex; align-items: center; gap: 5px; font-size: 12px; color: #cfcfd6; margin: 0; }
+  fieldset { border: none; padding: 0; margin: 0; }
+  .empty { color: #6f6f78; font-style: italic; padding: 8px 0; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1 style="margin-right:auto">Storytime bible editor</h1>
+  <select id="storyPicker"></select>
+  <button id="reloadBtn">Reload</button>
+  <button id="saveBtn" class="primary">Save</button>
+  <span id="status" class="status"></span>
+</div>
+<p class="sub">Not shown to Cooper — a plain editor for characters, places, things, threads and world state. Changing an id does not update references to it elsewhere.</p>
+
+<div id="app"></div>
+
+<script>
+const ROLES = ['hero', 'friend', 'villain', 'creature', 'bystander'];
+const CHAR_STATUSES = ['fine', 'hurt', 'missing', 'transformed', 'dead'];
+const THING_STATUSES = ['intact', 'broken', 'lost', 'destroyed'];
+const THREAD_STATUSES = ['open', 'resolved', 'abandoned'];
+const CREATORS = ['cooper', 'ai'];
+
+let bible = null;
+let storyId = null;
+
+const app = document.getElementById('app');
+const statusEl = document.getElementById('status');
+const picker = document.getElementById('storyPicker');
+
+function setStatus(msg, kind) {
+  statusEl.textContent = msg;
+  statusEl.className = 'status ' + (kind || '');
+  if (msg) setTimeout(() => { if (statusEl.textContent === msg) statusEl.textContent = ''; }, 3500);
+}
+
+function slug(s) {
+  return (s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'new';
+}
+
+function uniqueId(base, existingIds) {
+  let id = slug(base);
+  let n = 2;
+  while (existingIds.includes(id)) id = `${slug(base)}-${n++}`;
+  return id;
+}
+
+function el(tag, attrs, children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === 'text') node.textContent = v;
+    else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
+    else node.setAttribute(k, v);
+  }
+  for (const c of children || []) if (c) node.appendChild(c);
+  return node;
+}
+
+function field(labelText, inputEl) {
+  const label = el('label', { text: labelText });
+  return el('div', {}, [label, inputEl]);
+}
+
+function textInput(value, onChange, tag) {
+  const input = el(tag || 'input', tag === 'textarea' ? {} : { type: 'text' });
+  input.value = value || '';
+  input.addEventListener('input', () => onChange(input.value));
+  return input;
+}
+
+function listInput(value, onChange) {
+  // Comma-separated list, editable as one text field.
+  const input = el('input', { type: 'text' });
+  input.value = (value || []).join(', ');
+  input.addEventListener('input', () => {
+    onChange(input.value.split(',').map((s) => s.trim()).filter(Boolean));
+  });
+  return input;
+}
+
+function selectInput(value, options, onChange) {
+  const select = el('select', {});
+  for (const opt of options) {
+    const o = el('option', { value: opt, text: opt });
+    if (opt === value) o.setAttribute('selected', 'selected');
+    select.appendChild(o);
+  }
+  select.addEventListener('change', () => onChange(select.value));
+  return select;
+}
+
+function checkboxList(allItems, selectedIds, onToggle) {
+  const wrap = el('div', { class: 'chip-list' });
+  for (const item of allItems) {
+    const cb = el('input', { type: 'checkbox' });
+    cb.checked = selectedIds.includes(item.id);
+    cb.addEventListener('change', () => onToggle(item.id, cb.checked));
+    const label = el('label', {}, [cb, document.createTextNode(item.name)]);
+    wrap.appendChild(label);
+  }
+  return wrap;
+}
+
+// ---------------------------------------------------------------------------
+
+const TEMPLATE_ID = '__template__';
+
+async function loadStoryList() {
+  const stories = await fetch('/api/stories').then((r) => r.json());
+  picker.innerHTML = '';
+  picker.appendChild(
+    el('option', { value: TEMPLATE_ID, text: '— Default template (used for every new story) —' }),
+  );
+  for (const s of stories) {
+    picker.appendChild(el('option', { value: s.storyId, text: `${s.title} (${s.storyId})` }));
+  }
+  // Default to the template unless a specific story was deliberately picked
+  // last time — editing the template is the common case.
+  const remembered = localStorage.getItem('admin.storyId');
+  if (remembered && (remembered === TEMPLATE_ID || stories.some((s) => s.storyId === remembered))) {
+    picker.value = remembered;
+  } else {
+    picker.value = TEMPLATE_ID;
+  }
+  return stories;
+}
+
+async function loadBible(id) {
+  const url = id === TEMPLATE_ID ? '/api/admin/template' : `/api/admin/bible/${id}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
+  const data = await res.json();
+  // The template has no storyId/createdAt/beats — synthesize them so every
+  // render() function below can treat template and story bibles the same.
+  bible = id === TEMPLATE_ID ? { storyId: TEMPLATE_ID, createdAt: '', beats: [], ...data } : data;
+  storyId = id;
+  localStorage.setItem('admin.storyId', id);
+  render();
+}
+
+async function save() {
+  try {
+    const isTemplate = storyId === TEMPLATE_ID;
+    const url = isTemplate ? '/api/admin/template' : `/api/admin/bible/${storyId}`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bible),
+    });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
+    const data = await res.json();
+    bible = isTemplate ? { storyId: TEMPLATE_ID, createdAt: '', beats: [], ...data } : data;
+    setStatus('saved', 'ok');
+    render();
+  } catch (err) {
+    setStatus('save failed: ' + err.message, 'err');
+  }
+}
+
+// ---------------------------------------------------------------------------
+
+function render() {
+  app.innerHTML = '';
+  if (!bible) {
+    app.appendChild(el('p', { class: 'empty', text: 'No story loaded.' }));
+    return;
+  }
+  app.appendChild(renderMeta());
+  app.appendChild(renderScene());
+  app.appendChild(renderCharacters());
+  app.appendChild(renderPlaces());
+  app.appendChild(renderThings());
+  app.appendChild(renderThreads());
+}
+
+function renderMeta() {
+  const section = el('div', {});
+  section.appendChild(el('h2', { text: 'Story' }));
+  const grid = el('div', { class: 'grid' });
+
+  const left = el('div', {}, [
+    field('Title', textInput(bible.title, (v) => (bible.title = v))),
+    field('Genre', textInput(bible.genre, (v) => (bible.genre = v))),
+    field('Tone (comma separated)', listInput(bible.tone, (v) => (bible.tone = v))),
+  ]);
+  const right = el('div', {}, [
+    field('Premise', textInput(bible.premise, (v) => (bible.premise = v), 'textarea')),
+    field(
+      'World rules (comma separated)',
+      listInput(bible.worldRules, (v) => (bible.worldRules = v)),
+    ),
+  ]);
+  grid.appendChild(left);
+  grid.appendChild(right);
+  section.appendChild(grid);
+  return section;
+}
+
+function renderScene() {
+  const section = el('div', {});
+  section.appendChild(el('h2', { text: 'Current scene' }));
+  const scene = bible.currentScene;
+  const grid = el('div', { class: 'grid' });
+
+  const placeSelect = selectInput(
+    scene.placeId,
+    bible.places.map((p) => p.id),
+    (v) => (scene.placeId = v),
+  );
+  const left = el('div', {}, [
+    field('Place', placeSelect),
+    field(
+      'Present characters',
+      checkboxList(bible.characters, scene.presentCharacterIds, (id, checked) => {
+        scene.presentCharacterIds = checked
+          ? [...scene.presentCharacterIds, id]
+          : scene.presentCharacterIds.filter((x) => x !== id);
+      }),
+    ),
+  ]);
+  const right = el('div', {}, [
+    field('Situation', textInput(scene.situation, (v) => (scene.situation = v), 'textarea')),
+    field('Decision point (the fork)', textInput(scene.decisionPoint, (v) => (scene.decisionPoint = v), 'textarea')),
+  ]);
+  grid.appendChild(left);
+  grid.appendChild(right);
+  section.appendChild(grid);
+  return section;
+}
+
+function renderCharacters() {
+  const section = el('div', {});
+  section.appendChild(el('h2', { text: `Characters (${bible.characters.length})` }));
+  if (!bible.characters.length) section.appendChild(el('p', { class: 'empty', text: 'None yet.' }));
+
+  for (const c of bible.characters) {
+    const card = el('div', { class: 'card' });
+    card.appendChild(
+      el('div', { class: 'card-head' }, [
+        el('strong', { text: c.name || '(unnamed)' }),
+        el('button', {
+          class: 'danger',
+          text: 'Delete',
+          onclick: () => {
+            bible.characters = bible.characters.filter((x) => x !== c);
+            render();
+          },
+        }),
+      ]),
+    );
+
+    const row1 = el('div', { class: 'row2' }, [
+      field('Name', textInput(c.name, (v) => (c.name = v))),
+      field('Id', textInput(c.id, (v) => (c.id = v))),
+    ]);
+    const row2 = el('div', { class: 'row2' }, [
+      field('Role', selectInput(c.role, ROLES, (v) => (c.role = v))),
+      field('Created by', selectInput(c.createdBy, CREATORS, (v) => (c.createdBy = v))),
+    ]);
+    const row3 = el('div', { class: 'row2' }, [
+      field('Status', selectInput(c.status, CHAR_STATUSES, (v) => (c.status = v))),
+      field('Status note', textInput(c.statusNote, (v) => (c.statusNote = v))),
+    ]);
+    const row4 = el('div', { class: 'row2' }, [
+      field('Location', selectInput(c.location, bible.places.map((p) => p.id), (v) => (c.location = v))),
+      field('Wants', textInput(c.wants, (v) => (c.wants = v))),
+    ]);
+
+    card.appendChild(row1);
+    card.appendChild(row2);
+    card.appendChild(row3);
+    card.appendChild(row4);
+    card.appendChild(field('Appearance', textInput(c.appearance, (v) => (c.appearance = v), 'textarea')));
+    card.appendChild(field('Voice', textInput(c.voice, (v) => (c.voice = v))));
+    card.appendChild(field('Traits (comma separated)', listInput(c.traits, (v) => (c.traits = v))));
+    card.appendChild(
+      field(
+        'Carrying (thing ids, comma separated)',
+        listInput(c.carrying, (v) => (c.carrying = v)),
+      ),
+    );
+    card.appendChild(field('Secrets (comma separated)', listInput(c.secrets, (v) => (c.secrets = v))));
+
+    card.appendChild(el('label', { text: 'Relationships' }));
+    const relWrap = el('div', {});
+    for (const r of c.relationships) {
+      relWrap.appendChild(
+        el('div', { class: 'rel-row' }, [
+          field('With (id)', selectInput(r.withId, bible.characters.map((x) => x.id), (v) => (r.withId = v))),
+          field('Feeling', textInput(r.feeling, (v) => (r.feeling = v))),
+          field('History', textInput(r.history, (v) => (r.history = v))),
+          el('button', {
+            class: 'danger',
+            text: '×',
+            onclick: () => {
+              c.relationships = c.relationships.filter((x) => x !== r);
+              render();
+            },
+          }),
+        ]),
+      );
+    }
+    card.appendChild(relWrap);
+    card.appendChild(
+      el('div', { class: 'add-row' }, [
+        el('button', {
+          text: '+ Relationship',
+          onclick: () => {
+            c.relationships.push({ withId: bible.characters[0]?.id || '', feeling: '', history: '' });
+            render();
+          },
+        }),
+      ]),
+    );
+
+    section.appendChild(card);
+  }
+
+  section.appendChild(
+    el('div', { class: 'add-row' }, [
+      el('button', {
+        class: 'primary',
+        text: '+ New character',
+        onclick: () => {
+          const id = uniqueId('new-character', bible.characters.map((c) => c.id));
+          bible.characters.push({
+            id,
+            name: 'New character',
+            role: 'friend',
+            createdBy: 'ai',
+            traits: [],
+            wants: '',
+            appearance: '',
+            voice: '',
+            status: 'fine',
+            location: bible.places[0]?.id || '',
+            carrying: [],
+            relationships: [],
+            secrets: [],
+          });
+          render();
+        },
+      }),
+    ]),
+  );
+  return section;
+}
+
+function renderPlaces() {
+  const section = el('div', {});
+  section.appendChild(el('h2', { text: `Places (${bible.places.length})` }));
+  if (!bible.places.length) section.appendChild(el('p', { class: 'empty', text: 'None yet.' }));
+
+  for (const p of bible.places) {
+    const card = el('div', { class: 'card' });
+    card.appendChild(
+      el('div', { class: 'card-head' }, [
+        el('strong', { text: p.name || '(unnamed)' }),
+        el('button', {
+          class: 'danger',
+          text: 'Delete',
+          onclick: () => {
+            bible.places = bible.places.filter((x) => x !== p);
+            render();
+          },
+        }),
+      ]),
+    );
+    card.appendChild(
+      el('div', { class: 'row2' }, [
+        field('Name', textInput(p.name, (v) => (p.name = v))),
+        field('Id', textInput(p.id, (v) => (p.id = v))),
+      ]),
+    );
+    card.appendChild(field('Created by', selectInput(p.createdBy, CREATORS, (v) => (p.createdBy = v))));
+    card.appendChild(field('Description', textInput(p.description, (v) => (p.description = v), 'textarea')));
+    card.appendChild(field('Appearance', textInput(p.appearance, (v) => (p.appearance = v), 'textarea')));
+    card.appendChild(
+      field(
+        'Connects to (place ids, comma separated)',
+        listInput(p.connectsTo, (v) => (p.connectsTo = v)),
+      ),
+    );
+    section.appendChild(card);
+  }
+
+  section.appendChild(
+    el('div', { class: 'add-row' }, [
+      el('button', {
+        class: 'primary',
+        text: '+ New place',
+        onclick: () => {
+          const id = uniqueId('new-place', bible.places.map((p) => p.id));
+          bible.places.push({
+            id,
+            name: 'New place',
+            description: '',
+            appearance: '',
+            createdBy: 'ai',
+            connectsTo: [],
+          });
+          render();
+        },
+      }),
+    ]),
+  );
+  return section;
+}
+
+function renderThings() {
+  const section = el('div', {});
+  section.appendChild(el('h2', { text: `Things (${bible.things.length})` }));
+  if (!bible.things.length) section.appendChild(el('p', { class: 'empty', text: 'None yet.' }));
+
+  for (const t of bible.things) {
+    const card = el('div', { class: 'card' });
+    card.appendChild(
+      el('div', { class: 'card-head' }, [
+        el('strong', { text: t.name || '(unnamed)' }),
+        el('button', {
+          class: 'danger',
+          text: 'Delete',
+          onclick: () => {
+            bible.things = bible.things.filter((x) => x !== t);
+            render();
+          },
+        }),
+      ]),
+    );
+    card.appendChild(
+      el('div', { class: 'row2' }, [
+        field('Name', textInput(t.name, (v) => (t.name = v))),
+        field('Id', textInput(t.id, (v) => (t.id = v))),
+      ]),
+    );
+    card.appendChild(
+      el('div', { class: 'row2' }, [
+        field('Status', selectInput(t.status, THING_STATUSES, (v) => (t.status = v))),
+        field('Created by', selectInput(t.createdBy, CREATORS, (v) => (t.createdBy = v))),
+      ]),
+    );
+    card.appendChild(
+      el('div', { class: 'row2' }, [
+        field(
+          'Owner (character id, blank if none)',
+          selectInput(t.ownerId || '', ['', ...bible.characters.map((c) => c.id)], (v) => (t.ownerId = v || undefined)),
+        ),
+        field(
+          'Place (blank if carried/none)',
+          selectInput(t.placeId || '', ['', ...bible.places.map((p) => p.id)], (v) => (t.placeId = v || undefined)),
+        ),
+      ]),
+    );
+    card.appendChild(field('Description', textInput(t.description, (v) => (t.description = v), 'textarea')));
+    card.appendChild(field('Appearance', textInput(t.appearance, (v) => (t.appearance = v), 'textarea')));
+    card.appendChild(field('Powers (comma separated)', listInput(t.powers, (v) => (t.powers = v))));
+    section.appendChild(card);
+  }
+
+  section.appendChild(
+    el('div', { class: 'add-row' }, [
+      el('button', {
+        class: 'primary',
+        text: '+ New thing',
+        onclick: () => {
+          const id = uniqueId('new-thing', bible.things.map((t) => t.id));
+          bible.things.push({
+            id,
+            name: 'New thing',
+            description: '',
+            appearance: '',
+            createdBy: 'ai',
+            powers: [],
+            status: 'intact',
+          });
+          render();
+        },
+      }),
+    ]),
+  );
+  return section;
+}
+
+function renderThreads() {
+  const section = el('div', {});
+  section.appendChild(el('h2', { text: `Threads (${bible.threads.length})` }));
+  if (!bible.threads.length) section.appendChild(el('p', { class: 'empty', text: 'None yet.' }));
+
+  for (const t of bible.threads) {
+    const card = el('div', { class: 'card' });
+    card.appendChild(
+      el('div', { class: 'card-head' }, [
+        el('strong', { text: t.question || '(no question)' }),
+        el('button', {
+          class: 'danger',
+          text: 'Delete',
+          onclick: () => {
+            bible.threads = bible.threads.filter((x) => x !== t);
+            render();
+          },
+        }),
+      ]),
+    );
+    card.appendChild(field('Question', textInput(t.question, (v) => (t.question = v), 'textarea')));
+    card.appendChild(
+      el('div', { class: 'row2' }, [
+        field('Status', selectInput(t.status, THREAD_STATUSES, (v) => (t.status = v))),
+        field('Created by', selectInput(t.createdBy, CREATORS, (v) => (t.createdBy = v))),
+      ]),
+    );
+    if (t.status === 'resolved') {
+      card.appendChild(field('Resolution', textInput(t.resolution, (v) => (t.resolution = v), 'textarea')));
+    }
+    card.appendChild(el('p', { class: 'hint', text: `Opened beat ${t.opened}` }));
+    section.appendChild(card);
+  }
+
+  section.appendChild(
+    el('div', { class: 'add-row' }, [
+      el('button', {
+        class: 'primary',
+        text: '+ New thread',
+        onclick: () => {
+          const id = uniqueId('new-thread', bible.threads.map((t) => t.id));
+          bible.threads.push({
+            id,
+            question: '',
+            opened: bible.beats.length,
+            status: 'open',
+            createdBy: 'ai',
+          });
+          render();
+        },
+      }),
+    ]),
+  );
+  return section;
+}
+
+// ---------------------------------------------------------------------------
+
+picker.addEventListener('change', () => {
+  if (picker.value) void loadBible(picker.value);
+});
+document.getElementById('reloadBtn').addEventListener('click', () => {
+  if (storyId) void loadBible(storyId);
+});
+document.getElementById('saveBtn').addEventListener('click', () => void save());
+
+(async function init() {
+  const stories = await loadStoryList();
+  if (picker.value) await loadBible(picker.value);
+  else if (stories.length) await loadBible(stories[0].storyId);
+})();
+</script>
+</body>
+</html>

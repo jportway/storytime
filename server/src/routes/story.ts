@@ -2,23 +2,10 @@ import { Router } from 'express';
 import type { StoryStreamEvent } from '@storytime/shared';
 import { computeCredit } from '../bible.js';
 import { Session } from '../session.js';
+import { getSession, registerSession } from '../sessions.js';
 import { listStories, loadProfile, saveProfile, updateProfile } from '../store.js';
 
 export const storyRouter = Router();
-
-/**
- * Live sessions, keyed by story id. A family app on localhost with one
- * player doesn't need anything cleverer than a Map.
- */
-const sessions = new Map<string, Session>();
-
-async function getSession(storyId: string): Promise<Session | null> {
-  const live = sessions.get(storyId);
-  if (live) return live;
-  const resumed = await Session.resume(storyId);
-  if (resumed) sessions.set(storyId, resumed);
-  return resumed;
-}
 
 storyRouter.get('/stories', async (_req, res) => {
   res.json(await listStories());
@@ -26,7 +13,7 @@ storyRouter.get('/stories', async (_req, res) => {
 
 storyRouter.post('/stories', async (_req, res) => {
   const session = await Session.create();
-  sessions.set(session.bible.storyId, session);
+  registerSession(session);
   res.json({ bible: session.bible });
 });
 

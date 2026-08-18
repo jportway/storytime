@@ -60,6 +60,8 @@ export const config = {
     prompts: path.join(here, 'prompts'),
     data: path.join(repoRoot, 'data'),
     ttsCache: path.resolve(here, '../.cache/tts'),
+    /** The default starting cast, editable from /admin. */
+    grimwoodTemplate: path.join(repoRoot, 'shared/src/grimwood-template.json'),
   },
 } as const;
 
