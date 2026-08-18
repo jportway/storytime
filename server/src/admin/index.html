@@ -181,6 +181,45 @@ function listInput(value, onChange) {
   return input;
 }
 
+/**
+ * A repeatable list of textareas, each editable and independently
+ * removable — for freeform entries like example dialogue that will often
+ * contain commas or quotes of their own, where `listInput`'s naive
+ * comma-split would mangle them (as it did to Cooper's traits once she
+ * typed a whole paragraph into that field).
+ */
+function textListInput(items, addLabel, rerender) {
+  const wrap = el('div', {});
+  for (const [i, item] of items.entries()) {
+    const ta = textInput(item, (v) => (items[i] = v), 'textarea');
+    wrap.appendChild(
+      el('div', { class: 'rel-row', style: 'grid-template-columns: 1fr auto;' }, [
+        ta,
+        el('button', {
+          class: 'danger',
+          text: '×',
+          onclick: () => {
+            items.splice(i, 1);
+            rerender();
+          },
+        }),
+      ]),
+    );
+  }
+  wrap.appendChild(
+    el('div', { class: 'add-row' }, [
+      el('button', {
+        text: addLabel,
+        onclick: () => {
+          items.push('');
+          rerender();
+        },
+      }),
+    ]),
+  );
+  return wrap;
+}
+
 function selectInput(value, options, onChange) {
   const select = el('select', {});
   for (const opt of options) {
@@ -370,12 +409,17 @@ function renderCharacters() {
     ]);
 
     card.appendChild(row1);
+    card.appendChild(
+      field('Description (freeform — personality, backstory, lore; this is what the storyteller actually reads)', textInput(c.description, (v) => (c.description = v), 'textarea')),
+    );
     card.appendChild(row2);
     card.appendChild(row3);
     card.appendChild(row4);
-    card.appendChild(field('Appearance', textInput(c.appearance, (v) => (c.appearance = v), 'textarea')));
-    card.appendChild(field('Voice', textInput(c.voice, (v) => (c.voice = v))));
-    card.appendChild(field('Traits (comma separated)', listInput(c.traits, (v) => (c.traits = v))));
+    card.appendChild(field('Appearance (visual only — for phase 2 image generation, not sent to the storyteller yet)', textInput(c.appearance, (v) => (c.appearance = v), 'textarea')));
+    card.appendChild(field('Voice (how they talk — tone, register, speech patterns)', textInput(c.voice, (v) => (c.voice = v))));
+    card.appendChild(el('label', { text: 'Example lines (dialogue or behaviour that anchors their voice)' }));
+    card.appendChild(textListInput(c.examples, '+ Example', render));
+    card.appendChild(field('Traits (short phrases, comma separated — for anything longer use Description above)', listInput(c.traits, (v) => (c.traits = v))));
     card.appendChild(
       field(
         'Carrying (thing ids, comma separated)',
@@ -433,8 +477,10 @@ function renderCharacters() {
             createdBy: 'ai',
             traits: [],
             wants: '',
+            description: '',
             appearance: '',
             voice: '',
+            examples: [],
             status: 'fine',
             location: bible.places[0]?.id || '',
             carrying: [],

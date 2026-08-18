@@ -46,6 +46,13 @@ export interface Character {
   /** The one thing driving them. */
   wants: string;
   /**
+   * Freeform: personality, backstory, relationships, lore — whatever doesn't
+   * fit neatly in `appearance` or `voice`. This is the main place to
+   * describe who someone is, and it's what the storyteller actually reads;
+   * `appearance` deliberately isn't sent to it (see below).
+   */
+  description: string;
+  /**
    * Unused in phase 1. Kept current from beat one because phase 2's image
    * generation needs a consistent appearance description per character, and
    * back-filling it later across a finished story is far more work than
@@ -54,6 +61,11 @@ export interface Character {
   appearance: string;
   /** How they talk. Keeps dialogue voices distinct across many beats. */
   voice: string;
+  /**
+   * Concrete lines of dialogue or behaviour that anchor the voice — much
+   * stronger for the model to imitate than an adjective-only description.
+   */
+  examples: string[];
   status: CharacterStatus;
   statusNote?: string;
   /** Place id. */
