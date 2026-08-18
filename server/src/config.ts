@@ -1,8 +1,26 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
+
+/**
+ * The repo root, two levels up from either src/ (dev, via tsx) or dist/
+ * (built).
+ */
+const repoRoot = path.resolve(here, '../..');
+
+/**
+ * Load .env from the repo root explicitly.
+ *
+ * `dotenv/config` resolves relative to process.cwd(), and npm runs a
+ * workspace script with cwd set to that workspace — so `npm run dev -w
+ * server` would look for server/.env and silently miss the root .env that
+ * .env.example sits next to. Pointing at the root keeps one .env for the
+ * whole project regardless of where a command is run from.
+ */
+export const envPath = path.join(repoRoot, '.env');
+dotenv.config({ path: envPath });
 
 export const config = {
   port: Number(process.env.PORT ?? 8787),
@@ -40,7 +58,7 @@ export const config = {
 
   paths: {
     prompts: path.join(here, 'prompts'),
-    data: path.resolve(here, '../../data'),
+    data: path.join(repoRoot, 'data'),
     ttsCache: path.resolve(here, '../.cache/tts'),
   },
 } as const;
@@ -48,7 +66,9 @@ export const config = {
 export function assertConfigured(): void {
   if (!config.anthropicApiKey) {
     throw new Error(
-      'ANTHROPIC_API_KEY is not set. Copy .env.example to .env and fill it in.',
+      `ANTHROPIC_API_KEY is not set.\n\n` +
+        `Create ${envPath} (copy .env.example next to it) and add:\n` +
+        `  ANTHROPIC_API_KEY=sk-ant-...\n`,
     );
   }
 }

@@ -18,8 +18,18 @@ npm install
 npm run dev              # server on :8787, web on :5173
 ```
 
-The `ELEVENLABS_*` keys are optional — without them the owl falls back to the
-browser's built-in voice, which works fine but is noticeably less charming.
+`.env` goes in the **repo root**, next to `.env.example` — not in `server/`.
+It's gitignored, and the server loads it by absolute path so it works
+whichever directory you run a command from.
+
+Only `ANTHROPIC_API_KEY` is required. The `ELEVENLABS_*` keys are optional:
+without them the owl falls back to the browser's built-in voice, which works
+fine but is noticeably less charming.
+
+`DAILY_TOKEN_BUDGET` (default 2M) is a safety net — the server refuses
+Anthropic calls once a day's usage passes it, so a runaway loop can't quietly
+spend real money while Cooper is playing unsupervised. A normal hour-long
+session is roughly 40k tokens.
 
 ```bash
 npm test                 # 58 tests, no API key needed
