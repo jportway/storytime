@@ -14,9 +14,13 @@ function describeCharacter(c: Character, bible: StoryBible): string {
   const lines = [
     `- ${c.name} (${c.id}) — ${c.role}. ${c.traits.join(', ')}.`,
     `  Wants: ${c.wants}`,
+    `  Description: ${c.description}`,
     `  Voice: ${c.voice}`,
     `  Currently: ${c.status}${c.statusNote ? ` — ${c.statusNote}` : ''}, at ${place}`,
   ];
+  if (c.examples.length) {
+    lines.push(`  Example lines: ${c.examples.map((e) => `"${e}"`).join(' / ')}`);
+  }
   if (c.carrying.length) {
     const names = c.carrying.map(
       (id) => bible.things.find((t) => t.id === id)?.name ?? id,
