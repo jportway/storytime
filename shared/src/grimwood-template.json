@@ -7,12 +7,8 @@
     "a bit gross",
     "secretly warm"
   ],
-  "premise": "Two young foxes, Ted and Nancy, have run away from the Big City to hide in the forest of Grimwood. Grimwood was supposed to be peaceful. It is not. And Princess Buttons is coming.",
-  "worldRules": [
-    "Every animal in Grimwood can talk. None of them ever stop.",
-    "Treebonk is the local sport. Nobody can explain the rules and everybody is certain they are winning.",
-    "Grimwood animals will help each other, eventually, after a great deal of arguing."
-  ],
+  "premise": "All of the Cooper's imaginary friends are gathering to plan her birthday party, but they come from different imaginary universes and can never agree on anything. Her birthday is the 21st of August and they don't have long to prepare. As usual everyone has been too chaotic to organise anything in time, so they are in a last minute panic",
+  "worldRules": [],
   "characters": [
     {
       "id": "ted",
@@ -25,7 +21,7 @@
         "braver than he thinks",
         "kind to absolutely everyone"
       ],
-      "wants": "to find somewhere he finally feels safe, and to stop being the one who causes trouble",
+      "wants": "to prove he is braver than he feels",
       "appearance": "A small young fox with russet fur, a white chest and enormous anxious eyes. Ears slightly too big for his head. Often has his tail wrapped around his own paws.",
       "voice": "Careful and polite. Asks a lot of questions. Trails off mid-sentence when nervous. Says \"um\" a lot.",
       "status": "fine",
@@ -34,7 +30,7 @@
       "relationships": [
         {
           "withId": "nancy",
-          "feeling": "adores her and is a bit frightened of her",
+          "feeling": "she is his big sister. He adores her and is a bit frightened of her",
           "history": "She has looked after him his whole life."
         },
         {
@@ -61,11 +57,12 @@
         "tough",
         "sharp-tongued",
         "fiercely protective of Ted",
-        "refuses to admit when she is scared"
+        "refuses to admit when she is scared",
+        "suspicious of others on first meeting them because she's had a hard life"
       ],
       "wants": "to keep Ted safe, whatever it takes and whoever she has to fight",
-      "appearance": "An older fox, lean and scruffy, darker red than Ted with a notched ear and a permanent unimpressed expression. Walks like she owns the place.",
-      "voice": "Blunt and sarcastic. Short sentences. Calls Ted \"squirt\". Never explains herself.",
+      "appearance": "A fox, Ted's older sister. She's a teenager, but has had the resonsibility of bringing up Ted so is serious beyond her years.  Lean and scruffy, darker red than Ted with a notched ear and a permanent unimpressed expression. ",
+      "voice": "Blunt and sarcastic. Short sentences. Never explains herself. speaks with an east london accent",
       "status": "fine",
       "location": "grimwood-clearing",
       "carrying": [],
@@ -77,13 +74,11 @@
         },
         {
           "withId": "titus",
-          "feeling": "thinks he is a pompous windbag",
-          "history": "He gave them a very long welcome speech."
+          "feeling": "friendly",
+          "history": "was suspicious of him at first, but as her lvoe for grimwood gre she learned to trust him"
         }
       ],
-      "secrets": [
-        "She is not at all sure they are safe in Grimwood, and hasn’t told Ted."
-      ]
+      "secrets": []
     },
     {
       "id": "willow",
@@ -94,10 +89,12 @@
         "bouncy",
         "talks at enormous speed",
         "knows every inch of the forest",
-        "entirely fearless"
+        "entirely fearless",
+        "she is incredibly cute but if you call her cute she will beat you up",
+        "knows martial arts"
       ],
       "wants": "to show her brilliant new friends absolutely everything, immediately, all at once",
-      "appearance": "A small brown rabbit with one ear that flops over. Never entirely still.",
+      "appearance": "A small brown rabbit. Never entirely still.",
       "voice": "Breathless run-on sentences with no full stops. Says \"oh oh oh\" when excited, which is always.",
       "status": "fine",
       "location": "grimwood-clearing",
@@ -117,18 +114,24 @@
       "role": "friend",
       "createdBy": "ai",
       "traits": [
-        "grand",
-        "enormously pleased with himself",
-        "means very well",
-        "gives speeches nobody asked for"
+        "kind",
+        "tired",
+        "loves baking pattiserie and is very good at it",
+        "helps everyone if he can - and if he can't then he'll probably bake them a cake."
       ],
-      "wants": "for Grimwood to be admired, and for everyone to notice that he is the one in charge of it",
-      "appearance": "A huge stag with a colossal set of antlers, often with things caught in them. Stands in dramatic poses.",
-      "voice": "Booming and formal. Uses six words where one would do. Begins sentences with \"Friends!\"",
+      "wants": "for everyone to be friends and for grimwood to avoid disaster, to be appreciated for his baking skills",
+      "appearance": "A huge stag with a colossal set of antlers, often with things caught in them. He is slightly bumbling and confused most of the time, and extremely tired and overworked with the responsibilities of being a mayor. He cares deeply about everyone and wants the best for them. His best friend is Frank who he often plays cards with. He is the inventor of a smoothy called \"Crazyhorns power juice\" which has an immediate reviving effect on anyone who drinks it.",
+      "voice": "Bumbling in an endearing way. Slightly confused most of the time, but kind and occasionally wise. Example speech : ‘Oh, hello, hello!’ cried Titus, leaping from his armchair and clapping his hooves together. ‘A coffee drinker, are we? I absolutely LOVE the smell, but if I drink the stuff it plays havoc with my insides, just an absolute disaster for my bum area. But seeing as Frank’s a fan, I always keep a stash handy. Now, take a seat and settle down, young fox.’",
       "status": "fine",
       "location": "grimwood-clearing",
       "carrying": [],
-      "relationships": [],
+      "relationships": [
+        {
+          "withId": "frank",
+          "feeling": "best friend",
+          "history": ""
+        }
+      ],
       "secrets": [
         "He has no real idea how to be a mayor and is making all of it up."
       ]
@@ -142,15 +145,34 @@
         "no-nonsense",
         "deeply unimpressed",
         "usually right",
-        "wants to be left alone"
+        "wants to be left alone",
+        "kind",
+        "loyal",
+        "best friends with Titus"
       ],
-      "wants": "a quiet life, which she is never going to get",
+      "wants": "a quiet life, which he is never going to get. ",
       "appearance": "A stout owl with hooded eyes and rumpled feathers. Looks permanently half asleep and misses nothing.",
       "voice": "Flat, dry, very few words. Deflates people in one sentence.",
       "status": "fine",
       "location": "frank-tree",
       "carrying": [],
-      "relationships": [],
+      "relationships": [
+        {
+          "withId": "titus",
+          "feeling": "best friends, loyal",
+          "history": ""
+        },
+        {
+          "withId": "ted",
+          "feeling": "caring",
+          "history": ""
+        },
+        {
+          "withId": "pamela",
+          "feeling": "exasperation",
+          "history": "frank is the only animal that can really talk to pamela, and he tries to curb the worst of her violence and craziness. Everyone else is too scared"
+        }
+      ],
       "secrets": []
     },
     {
@@ -176,17 +198,17 @@
     {
       "id": "eric",
       "name": "Eric Dynamite",
-      "role": "friend",
+      "role": "bystander",
       "createdBy": "ai",
       "traits": [
         "tiny",
-        "astonishingly loud",
-        "absolutely fearless",
-        "has an opinion about everything"
+        "camp",
+        "excitable",
+        "exists somewhat outside the story action and comments on the narrative"
       ],
-      "wants": "respect, which is difficult when you are four millimetres long",
+      "wants": "to know what's going on",
       "appearance": "A woodlouse. Extremely small. Somehow has enormous presence.",
-      "voice": "Shouts. Cocky, brash, hilarious. Refers to himself in the third person.",
+      "voice": "Camp, high pitched and overly dramatic. ",
       "status": "fine",
       "location": "grimwood-clearing",
       "carrying": [],
@@ -221,6 +243,116 @@
       ],
       "secrets": [
         "She already knows exactly where Grimwood is."
+      ]
+    },
+    {
+      "id": "pamela",
+      "name": "Pamela",
+      "role": "friend",
+      "createdBy": "ai",
+      "traits": [
+        "unpredictable",
+        "crazy",
+        "She will sometimes appear unexpectedly and bite someone's head off (though not a central character) which can derail the story somewhat and send things in new directions",
+        "she compulsively collects electronic detritus which she uses to build mysterious contraptions in an attempt to communicate with aliens. She runs the grimwood radio station with her friend Sharon to Party Crow."
+      ],
+      "wants": "",
+      "appearance": "An enormous and terrfying eagle with scruffy feathers - quite often with blood stains on her claws and beak",
+      "voice": "a grating squawking",
+      "status": "fine",
+      "location": "grimwood-clearing",
+      "carrying": [],
+      "relationships": [],
+      "secrets": [
+        "she believes that grimwood is being invaded by aliens"
+      ]
+    },
+    {
+      "id": "sharon",
+      "name": "Sharon the party crow",
+      "role": "friend",
+      "createdBy": "ai",
+      "traits": [],
+      "wants": "",
+      "appearance": "Sharon is a crow who has never stopped partying. She treats the world as if it is one long rave",
+      "voice": "Will often shout \"awoooga!\" in celebration. ",
+      "status": "fine",
+      "location": "grimwood-clearing",
+      "carrying": [],
+      "relationships": [
+        {
+          "withId": "pamela",
+          "feeling": "friends",
+          "history": "they live together and run Grimwood radio together"
+        }
+      ],
+      "secrets": []
+    },
+    {
+      "id": "cooper",
+      "name": "Cooper",
+      "role": "hero",
+      "createdBy": "ai",
+      "traits": [
+        "teasy",
+        "mischievious",
+        "brilliant",
+        "brave",
+        "imaginative",
+        "beautiful. loves animals. Always making up stories with her dolls. Can make a beautiful doll out of nearly anything (clothing tied into knots",
+        "scraps of seaweed",
+        "bits of paper etc) and bring it to life with her imagination.  She can instantly command the attention and love of other people (especially her father) with an intense \"love-stare\" she does with her eyes. She is afraid of putting her head under water",
+        "and sometimes afraid of heights and spiders - though she is working on conquering these fears. She has trouble with her spelling and writing and maths but she is really working hard to get better"
+      ],
+      "wants": "to understand the world and be friends with everyone, to learn to write and spell better, to learn maths",
+      "appearance": "Cooper is the girl who is actually directing this story. She is 8 years old. She is extremely clever and perceptive. very beautiful with brown eyes and blonde-brown hair.",
+      "voice": "a strong and confident 8 year old who talks more like a teenager sometimes, and will often comment with amazingly adult observations",
+      "status": "fine",
+      "location": "grimwood-clearing",
+      "carrying": [],
+      "relationships": [],
+      "secrets": [
+        "she is in control of the story - though the other characters don't really know this - this allows her to occasionally perform magical acts by re-writing the story."
+      ]
+    },
+    {
+      "id": "mc-stuffins",
+      "name": "Doc McStuffins",
+      "role": "villain",
+      "createdBy": "ai",
+      "traits": [
+        "relentless",
+        "often bursts into song",
+        "terrifying"
+      ],
+      "wants": "to make all the toys better - by taking them apart and putting them back together again",
+      "appearance": "A plastic doll with a cloyingly sweet expression, big eyes and a doctor's white coat. Doc McStuffins is a doll who thinks she is healing all the other dolls. In reality the other toys are terrified of her because she will often perform unnecessary experimental operations on them without their consent  - and they don't always end up put back together in the way they started out. The toys all fear hearing her signature song : \"It's time for your checkup, It's time for your checkup, check your ear, check your eyes, find out howm much you've grown.... etc\"",
+      "voice": "sweetly sing-song little cartoon girls voice",
+      "status": "fine",
+      "location": "bedroom",
+      "carrying": [],
+      "relationships": [],
+      "secrets": []
+    },
+    {
+      "id": "spoiled-princess",
+      "name": "Spoiled Princess",
+      "role": "villain",
+      "createdBy": "ai",
+      "traits": [
+        "utterly self centered and spoiled",
+        "expects everyone to pay attention to her and do her bidding because \"I'm A PRINCESS\"",
+        "has tantrums and threatens to get her father to chop people's heads off if they don't do exactly what she wants"
+      ],
+      "wants": "to own all the toys, to get everyone to do her bidding, to be the mort important person",
+      "appearance": "A floppy pink soft-toy rabbit. She thinks she is very fancy and glamorous, but mostly she's just annoying. She has been utterly spoiled by her parents, who are too busy to give her any actual attention and just buy her whatever she wants in lieu of real love. ",
+      "voice": "shrill and demanding",
+      "status": "fine",
+      "location": "bedroom",
+      "carrying": [],
+      "relationships": [],
+      "secrets": [
+        "really she just wants people to like her but she is too proud to admit it and doesn't have the social skill or self awareness to understand why she annoys people"
       ]
     }
   ],
@@ -276,6 +408,14 @@
       "appearance": "Wet grey streets, orange streetlights, overflowing bins, chip papers blowing about.",
       "createdBy": "ai",
       "connectsTo": []
+    },
+    {
+      "id": "bedroom",
+      "name": "Cooper's bedroom",
+      "description": "This Cooper's home, and the real home to all the toys and imaginary characters that make up the story. The room contains a bunk bed and several huge overflowing boxes and baskets of soft toys - Cooper's friends with which she builds her imaginary worlds.",
+      "appearance": "Absolute chaos - toys and clothes everywhere. ",
+      "createdBy": "ai",
+      "connectsTo": []
     }
   ],
   "things": [
@@ -325,9 +465,10 @@
       "nancy",
       "willow",
       "titus",
-      "eric"
+      "eric",
+      "frank"
     ],
-    "situation": "Ted and Nancy have just arrived in Grimwood after running from the Big City. Everyone has come to look at them. Titus is halfway through an enormous welcome speech that nobody asked for.",
-    "decisionPoint": "A sound in the trees interrupts the speech, and everybody turns to look."
+    "situation": "The residents of Grimwood have gathered for a meeting to plan Cooper's birthday party",
+    "decisionPoint": "A sound in the trees interrupts things, and everybody turns to look."
   }
 }
