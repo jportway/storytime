@@ -14,5 +14,8 @@ server/.cache/
 *.log
 .DS_Store
 
+# JetBrains IDE project files
+.idea/
+
 # TypeScript incremental build output
 *.tsbuildinfo
