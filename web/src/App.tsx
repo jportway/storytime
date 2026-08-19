@@ -123,7 +123,10 @@ export function App() {
       if (!bible || !direction.trim()) return;
       setDraft('');
       setGate(null);
+      gateDraftRef.current = null;
       rejectedGuesses.current = {};
+      llmQueue.current = [];
+      llmChecked.current = false;
       owl.dismiss();
       await runBeat(bible.storyId, direction);
 
@@ -159,6 +162,8 @@ export function App() {
   const [checkingSend, setCheckingSend] = useState(false);
   const rejectedGuesses = useRef<Record<string, Set<string>>>({});
   const llmQueue = useRef<api.SendCheckIssue[]>([]);
+  /** Whether the one LLM check has already run for the current send attempt. */
+  const llmChecked = useRef(false);
   /** The draft a currently-open gate prompt refers to, so we can drop it if
    * she starts fixing the word herself instead of answering yes/no. */
   const gateDraftRef = useRef<string | null>(null);
@@ -191,45 +196,52 @@ export function App() {
     return { word: issue.original, suggestion: issue.suggestion, kind: 'spelling', retryable: true, exhausted: false };
   }, []);
 
-  /** After a fix (or after giving up on one), move to whatever's next. */
-  const proceedAfterFix = useCallback(
-    (text: string) => {
+  /**
+   * Work through everything standing between her and sending, one question
+   * at a time, then send. Re-entered after each answer.
+   *
+   * Local high-confidence gates drain first and the LLM check runs once,
+   * after they're clear — deliberately in that order, so the LLM sees text
+   * with the deterministic corrections already applied rather than tripping
+   * over them.
+   */
+  const continueSend = useCallback(
+    async (text: string) => {
       const local = nextLocalGateFor(text);
       if (local) {
         openGate(local, text);
         return;
       }
+
+      if (!llmChecked.current) {
+        llmChecked.current = true;
+        setCheckingSend(true);
+        try {
+          llmQueue.current = await api.checkBeforeSend({ draft: text, storyNames });
+        } finally {
+          setCheckingSend(false);
+        }
+      }
+
       const queued = nextQueuedGate();
       if (queued) {
         openGate(queued, text);
         return;
       }
+
       openGate(null, text);
       void send(text);
     },
-    [nextLocalGateFor, nextQueuedGate, openGate, send],
+    [nextLocalGateFor, nextQueuedGate, openGate, send, storyNames],
   );
 
-  const attemptSend = useCallback(async () => {
+  /** Pressing Send starts a fresh attempt — nothing carried over from the last. */
+  const attemptSend = useCallback(() => {
     if (!draft.trim() || !checker) return;
-
-    const local = nextLocalGateFor(draft);
-    if (local) {
-      openGate(local, draft);
-      return;
-    }
-
-    setCheckingSend(true);
-    try {
-      llmQueue.current = await api.checkBeforeSend({ draft, storyNames });
-    } finally {
-      setCheckingSend(false);
-    }
-
-    const queued = nextQueuedGate();
-    if (queued) openGate(queued, draft);
-    else void send();
-  }, [draft, checker, storyNames, nextLocalGateFor, nextQueuedGate, openGate, send]);
+    llmChecked.current = false;
+    llmQueue.current = [];
+    void continueSend(draft);
+  }, [draft, checker, continueSend]);
 
   const gateYes = useCallback(() => {
     if (!gate) return;
@@ -241,8 +253,8 @@ export function App() {
           draft.slice(match.index + match[0].length)
         : draft;
     setDraft(fixed);
-    proceedAfterFix(fixed);
-  }, [gate, draft, proceedAfterFix]);
+    void continueSend(fixed);
+  }, [gate, draft, continueSend]);
 
   const gateNo = useCallback(() => {
     if (!gate || !checker) return;
@@ -258,7 +270,7 @@ export function App() {
     );
   }, [gate, checker, draft, openGate]);
 
-  const gateAcknowledge = useCallback(() => proceedAfterFix(draft), [draft, proceedAfterFix]);
+  const gateAcknowledge = useCallback(() => void continueSend(draft), [draft, continueSend]);
 
   // A stale gate prompt (about text that's since changed) is worse than no
   // prompt — if she starts typing instead of answering, let it go.

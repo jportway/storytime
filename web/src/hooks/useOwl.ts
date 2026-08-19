@@ -36,6 +36,13 @@ export function useOwl(opts: {
   const pauseTimer = useRef<number | undefined>(undefined);
   const stuckTimer = useRef<number | undefined>(undefined);
   const lastAsked = useRef('');
+  /**
+   * Bumped whenever what the owl is talking about stops being true — she
+   * sent the turn, or dismissed it. A reply that was already in flight when
+   * that happened is about text that no longer exists, so it gets dropped
+   * rather than landing on an empty writing box.
+   */
+  const generation = useRef(0);
 
   // Tier 0: instant, local, silent. Runs on every keystroke.
   useEffect(() => {
@@ -55,6 +62,7 @@ export function useOwl(opts: {
       if (draft === lastAsked.current) return;
       lastAsked.current = draft;
 
+      const asked = generation.current;
       setThinking(true);
       try {
         const result = await askOwl({
@@ -63,9 +71,9 @@ export function useOwl(opts: {
           findings: opts.checker?.check(draft) ?? [],
           storyNames: opts.storyNames,
         });
-        setResponse(result);
+        if (generation.current === asked) setResponse(result);
       } finally {
-        setThinking(false);
+        if (generation.current === asked) setThinking(false);
       }
     },
     [opts.enabled, opts.fork, opts.checker, opts.storyNames],
@@ -107,7 +115,16 @@ export function useOwl(opts: {
     void consult(opts.draft);
   }, [consult, opts.draft]);
 
-  const dismiss = useCallback(() => setResponse(null), []);
+  const dismiss = useCallback(() => {
+    // Abandon anything in flight as well as what's on screen, and stop the
+    // owl looking like it's still thinking about a turn that's now gone.
+    generation.current += 1;
+    lastAsked.current = '';
+    window.clearTimeout(pauseTimer.current);
+    window.clearTimeout(stuckTimer.current);
+    setResponse(null);
+    setThinking(false);
+  }, []);
 
   return { findings, response, thinking, askNow, dismiss } satisfies OwlState & {
     askNow: () => void;

@@ -87,6 +87,14 @@ export function Owl({
     };
   }, [gate, response, say, spellOut]);
 
+  // The board card renders from `activeHelp`, which outlives the response
+  // that produced it — so when the response goes away (she sent the turn,
+  // or dismissed it) the card has to go with it, or it sits there offering
+  // to fix a word that is no longer anywhere on screen.
+  useEffect(() => {
+    if (!response) setActiveHelp(null);
+  }, [response]);
+
   // Speak the gate question once per distinct guess — a fresh guess (or
   // "have a go yourself") speaks again, repeated renders of the same one
   // don't.
