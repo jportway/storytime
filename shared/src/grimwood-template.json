@@ -340,7 +340,7 @@
         "imaginative"
       ],
       "wants": "to understand the world and be friends with everyone, to learn to write and spell better, to learn maths",
-      "description": "The girl who is actually directing this story — extremely clever and perceptive. Beautiful, and loves animals. Always making up stories with her dolls; she can turn almost anything (clothing tied into knots, scraps of seaweed, bits of paper) into a character and bring it to life with her imagination. She can instantly win someone's attention and love — especially her father's — with an intense \"love-stare\" she does with her eyes. She is afraid of putting her head under water, and sometimes of heights and spiders, though she's working on conquering both. She has trouble with her spelling, writing and maths, but she's really working hard to get better.",
+      "description": "The girl who is actually directing this story — extremely clever and perceptive. Beautiful, and loves animals. Always making up stories with her dolls; she can turn almost anything (clothing tied into knots, scraps of seaweed, bits of paper) into a character and bring it to life with her imagination. She can instantly win someone's attention and love — especially her father's — with an intense \"love-stare\" she does with her eyes. She is afraid of putting her head under water, and sometimes of heights and spiders, though she's working on conquering both. She has trouble with her spelling, writing and maths, but she's really working hard to get better.\nCooper's nicknames are \"Meeps\" or \"Meepsie\"",
       "appearance": "An 8-year-old girl with brown eyes and blonde-brown hair.",
       "voice": "A strong and confident 8 year old who talks more like a teenager sometimes, and will often comment with amazingly adult observations.",
       "examples": [],
@@ -424,9 +424,9 @@
     },
     {
       "id": "ingrid-lake",
-      "name": "The Lake",
-      "description": "Ingrid's lake, which she considers entirely hers. There is a small, absurd jetty.",
-      "appearance": "A still green lake with reeds, a tiny white jetty, and a great many disappointed frogs.",
+      "name": "The smelly pond",
+      "description": "Ingrid's pond, which she considers entirely hers. It is full of old shopping trolleys that have been dumped there, forming an island that Ingrid nests on.",
+      "appearance": "Ted looked at the small pond, which was indeed a pond, and also quite small. The water was murky, and there was a collection of upside-down shopping trolleys in the middle. Sitting on top of the shopping trolleys was a duck.",
       "createdBy": "ai",
       "connectsTo": [
         "grimwood-clearing",
@@ -512,6 +512,6 @@
       "frank"
     ],
     "situation": "The residents of Grimwood have gathered for a meeting to plan Cooper's birthday party.",
-    "decisionPoint": "A sound in the trees interrupts things, and everybody turns to look."
+    "decisionPoint": "no one knows where her present is - or did anyone even remember to buy one?"
   }
 }

@@ -105,6 +105,24 @@ export class SpellChecker {
     return null;
   }
 
+  /**
+   * A further guess for a word, excluding suggestions already tried —
+   * used when the owl's first guess is wrong and it has another go.
+   *
+   * Reversals and curated misspellings only ever have one right answer
+   * (there's no second way to un-reverse "deb"), so only the phonetic
+   * layer has further candidates to offer. Returns null once those are
+   * exhausted too, meaning: no more automatic guesses, she should fix it
+   * herself.
+   */
+  nextCandidate(word: string, excluding: Iterable<string>): string | null {
+    const tried = new Set([...excluding].map((s) => s.toLowerCase()));
+    const bucket = this.phonetic.get(phoneticKey(word)) ?? [];
+    const ranked = rankCandidates(word, bucket, 5);
+    const next = ranked.find((c) => !tried.has(c.word.toLowerCase()));
+    return next ? matchCase(word, next.word) : null;
+  }
+
   /** Check a whole draft, returning findings with text offsets for underlining. */
   check(text: string): LocalFinding[] {
     const findings: LocalFinding[] = [];

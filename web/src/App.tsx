@@ -13,7 +13,7 @@ import { buildChecker } from './spellchecker.js';
 import { useOwl } from './hooks/useOwl.js';
 import { useSpeech } from './hooks/useSpeech.js';
 import { BeatView, PanelView } from './components/Story.js';
-import { Owl } from './components/Owl.js';
+import { Owl, type SendGate } from './components/Owl.js';
 import { WritingBox } from './components/WritingBox.js';
 import { WhoIsWho } from './components/WhoIsWho.js';
 
@@ -116,20 +116,152 @@ export function App() {
     setCredit(await api.getStory(fresh.storyId).then((s) => s.credit));
   }, [runBeat]);
 
-  const send = useCallback(async () => {
-    if (!bible || !draft.trim()) return;
-    const direction = draft;
-    setDraft('');
-    owl.dismiss();
-    await runBeat(bible.storyId, direction);
+  const send = useCallback(
+    async (text?: string) => {
+      const direction = text ?? draft;
+      if (!bible || !direction.trim()) return;
+      setDraft('');
+      setGate(null);
+      rejectedGuesses.current = {};
+      owl.dismiss();
+      await runBeat(bible.storyId, direction);
 
-    const [freshProfile, story] = await Promise.all([
-      api.getProfile().catch(() => null),
-      api.getStory(bible.storyId).catch(() => null),
-    ]);
-    if (freshProfile) setProfile(freshProfile);
-    if (story) setCredit(story.credit);
-  }, [bible, draft, owl, runBeat]);
+      const [freshProfile, story] = await Promise.all([
+        api.getProfile().catch(() => null),
+        api.getStory(bible.storyId).catch(() => null),
+      ]);
+      if (freshProfile) setProfile(freshProfile);
+      if (story) setCredit(story.credit);
+    },
+    [bible, draft, owl, runBeat],
+  );
+
+  // -----------------------------------------------------------------------
+  // Checking her spelling before a turn actually sends.
+  //
+  // Not a hard gate: the writing box stays fully editable throughout (except
+  // for the brief LLM round trip itself), and once the owl's guesses for a
+  // word run out it lets that word through rather than trapping her.
+  //
+  // Two sources, checked in order:
+  //  1. The local checker's high-confidence layers (reversals, curated
+  //     misspellings) — instant, no network, and reliable enough to gate on
+  //     directly. These are deterministic: there's no legitimate second
+  //     guess, so a "no" goes straight to "have a go yourself".
+  //  2. One LLM round trip, only once (1) is clear — it catches badly
+  //     garbled words the local checker can't see at all, and it actually
+  //     knows English, so it won't false-flag a real word just because the
+  //     small local dictionary doesn't happen to contain it.
+  // -----------------------------------------------------------------------
+
+  const [gate, setGate] = useState<SendGate | null>(null);
+  const [checkingSend, setCheckingSend] = useState(false);
+  const rejectedGuesses = useRef<Record<string, Set<string>>>({});
+  const llmQueue = useRef<api.SendCheckIssue[]>([]);
+  /** The draft a currently-open gate prompt refers to, so we can drop it if
+   * she starts fixing the word herself instead of answering yes/no. */
+  const gateDraftRef = useRef<string | null>(null);
+
+  const openGate = useCallback((next: SendGate | null, text: string) => {
+    gateDraftRef.current = next ? text : null;
+    setGate(next);
+  }, []);
+
+  const nextLocalGateFor = useCallback(
+    (text: string): SendGate | null => {
+      if (!checker) return null;
+      for (const f of checker.check(text)) {
+        if (f.confidence !== 'high') continue;
+        if (rejectedGuesses.current[f.word.toLowerCase()]?.has(f.suggestion.toLowerCase())) continue;
+        return { word: f.word, suggestion: f.suggestion, kind: f.kind, retryable: false, exhausted: false };
+      }
+      return null;
+    },
+    [checker],
+  );
+
+  const nextQueuedGate = useCallback((): SendGate | null => {
+    const issue = llmQueue.current.shift();
+    if (!issue) return null;
+    // Retryable: unlike the local-only case, the owl has already confirmed
+    // something's genuinely wrong here, so a cheap local second guess is
+    // worth offering before giving up — it's no longer the risky "guess on
+    // a word that might actually be fine" situation that started this.
+    return { word: issue.original, suggestion: issue.suggestion, kind: 'spelling', retryable: true, exhausted: false };
+  }, []);
+
+  /** After a fix (or after giving up on one), move to whatever's next. */
+  const proceedAfterFix = useCallback(
+    (text: string) => {
+      const local = nextLocalGateFor(text);
+      if (local) {
+        openGate(local, text);
+        return;
+      }
+      const queued = nextQueuedGate();
+      if (queued) {
+        openGate(queued, text);
+        return;
+      }
+      openGate(null, text);
+      void send(text);
+    },
+    [nextLocalGateFor, nextQueuedGate, openGate, send],
+  );
+
+  const attemptSend = useCallback(async () => {
+    if (!draft.trim() || !checker) return;
+
+    const local = nextLocalGateFor(draft);
+    if (local) {
+      openGate(local, draft);
+      return;
+    }
+
+    setCheckingSend(true);
+    try {
+      llmQueue.current = await api.checkBeforeSend({ draft, storyNames });
+    } finally {
+      setCheckingSend(false);
+    }
+
+    const queued = nextQueuedGate();
+    if (queued) openGate(queued, draft);
+    else void send();
+  }, [draft, checker, storyNames, nextLocalGateFor, nextQueuedGate, openGate, send]);
+
+  const gateYes = useCallback(() => {
+    if (!gate) return;
+    const match = draft.match(new RegExp(`\\b${escapeRegExp(gate.word)}\\b`));
+    const fixed =
+      match && match.index !== undefined
+        ? draft.slice(0, match.index) + gate.suggestion + draft.slice(match.index + match[0].length)
+        : draft;
+    setDraft(fixed);
+    proceedAfterFix(fixed);
+  }, [gate, draft, proceedAfterFix]);
+
+  const gateNo = useCallback(() => {
+    if (!gate || !checker) return;
+    const key = gate.word.toLowerCase();
+    const rejected = rejectedGuesses.current[key] ?? new Set<string>();
+    rejected.add(gate.suggestion.toLowerCase());
+    rejectedGuesses.current[key] = rejected;
+
+    const alt = gate.retryable ? checker.nextCandidate(gate.word, rejected) : null;
+    openGate(
+      { ...gate, suggestion: alt ?? gate.suggestion, retryable: gate.retryable && Boolean(alt), exhausted: !alt },
+      draft,
+    );
+  }, [gate, checker, draft, openGate]);
+
+  const gateAcknowledge = useCallback(() => proceedAfterFix(draft), [draft, proceedAfterFix]);
+
+  // A stale gate prompt (about text that's since changed) is worse than no
+  // prompt — if she starts typing instead of answering, let it go.
+  useEffect(() => {
+    if (gate && draft !== gateDraftRef.current) setGate(null);
+  }, [draft, gate]);
 
   useEffect(() => {
     void api.getProfile().then(setProfile).catch(() => undefined);
@@ -205,9 +337,9 @@ export function App() {
         <WritingBox
           value={draft}
           onChange={setDraft}
-          onSend={() => void send()}
+          onSend={() => void attemptSend()}
           findings={owl.findings}
-          disabled={writing}
+          disabled={writing || checkingSend}
           fork={fork}
         />
         <Owl
@@ -217,6 +349,11 @@ export function App() {
           onAccept={acceptHelp}
           say={speech.say}
           spellOut={speech.spellOut}
+          gate={gate}
+          onGateYes={gateYes}
+          onGateNo={gateNo}
+          onGateAcknowledge={gateAcknowledge}
+          checkingSend={checkingSend}
         />
       </footer>
 

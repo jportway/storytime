@@ -67,6 +67,26 @@ export async function askOwl(body: {
   return res.json();
 }
 
+export interface SendCheckIssue {
+  original: string;
+  suggestion: string;
+}
+
+/** The one LLM round trip before a turn sends, once the local checker is clear. */
+export async function checkBeforeSend(body: {
+  draft: string;
+  storyNames: string[];
+}): Promise<SendCheckIssue[]> {
+  const res = await fetch('/api/owl/send-check', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) return [];
+  const { issues } = await res.json();
+  return Array.isArray(issues) ? issues : [];
+}
+
 /**
  * Stream the next beat, invoking `onEvent` for each server-sent event.
  *
