@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type {
-  Beat,
-  OwlHelp,
-  Panel,
-  Profile,
-  SpellChecker,
-  StoryBible,
+import {
+  matchCase,
+  type Beat,
+  type OwlHelp,
+  type Panel,
+  type Profile,
+  type SpellChecker,
+  type StoryBible,
 } from '@storytime/shared';
 import * as api from './api.js';
 import type { Credit } from './api.js';
@@ -235,7 +236,9 @@ export function App() {
     const match = draft.match(new RegExp(`\\b${escapeRegExp(gate.word)}\\b`));
     const fixed =
       match && match.index !== undefined
-        ? draft.slice(0, match.index) + gate.suggestion + draft.slice(match.index + match[0].length)
+        ? draft.slice(0, match.index) +
+          matchCase(match[0], gate.suggestion) +
+          draft.slice(match.index + match[0].length)
         : draft;
     setDraft(fixed);
     proceedAfterFix(fixed);
@@ -273,12 +276,15 @@ export function App() {
 
   /** Accept one of the owl's corrections. Never applied automatically. */
   const acceptHelp = useCallback((help: OwlHelp) => {
-    setDraft((prev) =>
-      prev.replace(
-        new RegExp(`\\b${escapeRegExp(help.original)}\\b`),
-        help.fixed,
-      ),
-    );
+    setDraft((prev) => {
+      const match = prev.match(new RegExp(`\\b${escapeRegExp(help.original)}\\b`));
+      if (!match || match.index === undefined) return prev;
+      return (
+        prev.slice(0, match.index) +
+        matchCase(match[0], help.fixed) +
+        prev.slice(match.index + match[0].length)
+      );
+    });
   }, []);
 
   // ---------------------------------------------------------------------
