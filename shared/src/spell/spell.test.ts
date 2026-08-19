@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CORE_WORDS, SpellChecker } from './index.js';
+import { CORE_WORDS, SpellChecker, isCosmeticFix } from './index.js';
 import { detectReversal } from './reversals.js';
 import { editDistance, phoneticKey } from './phonetic.js';
 import { lookupMisspelling } from './misspellings.js';
@@ -145,6 +145,29 @@ describe('normalise()', () => {
   it('leaves correct text untouched', () => {
     const text = 'The dragon roared angrily at Ted.';
     expect(checker.normalise(text)).toBe(text);
+  });
+});
+
+describe('cosmetic fixes never block a send', () => {
+  it('treats a missing apostrophe as cosmetic', () => {
+    // These all live in the curated table as high-confidence corrections,
+    // so without this rule they would each stop her sending.
+    expect(isCosmeticFix('dont', "don't")).toBe(true);
+    expect(isCosmeticFix('cant', "can't")).toBe(true);
+    expect(isCosmeticFix('its', "it's")).toBe(true);
+  });
+
+  it('treats capitalisation as cosmetic', () => {
+    expect(isCosmeticFix('i', 'I')).toBe(true);
+    expect(isCosmeticFix('nancy', 'Nancy')).toBe(true);
+    expect(isCosmeticFix('im', "I'm")).toBe(true);
+  });
+
+  it('still counts a real spelling change as worth stopping for', () => {
+    expect(isCosmeticFix('deb', 'bed')).toBe(false);
+    expect(isCosmeticFix('germp', 'jump')).toBe(false);
+    expect(isCosmeticFix('ski', 'sky')).toBe(false);
+    expect(isCosmeticFix('becuase', 'because')).toBe(false);
   });
 });
 

@@ -11,6 +11,7 @@ Never flag:
 
 - A correctly spelled real word, however short, plain, or unusual-looking, unless it plainly does not fit the sentence's meaning. If in doubt, it's fine — a small local dictionary can't tell the difference between "unfamiliar" and "wrong", but you can.
 - Grammar, punctuation, or style.
+- Anything where your fix is only a capital letter or an apostrophe — "dont" for "don't", "i" for "I", a missing full stop. She is allowed to send those exactly as they are. This is the single most common thing to get wrong here: those are not spelling mistakes, and stopping her over one is worse than letting it through.
 - Character, place or thing names from the story — see the list you're given.
 - Anything already correct.
 

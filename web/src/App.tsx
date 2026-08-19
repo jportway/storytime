@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  isCosmeticFix,
   matchCase,
   type Beat,
   type OwlHelp,
@@ -178,6 +179,10 @@ export function App() {
       if (!checker) return null;
       for (const f of checker.check(text)) {
         if (f.confidence !== 'high') continue;
+        // Capitalisation and apostrophes never block a send — the curated
+        // table is full of dont/don't and im/I'm entries, and none of them
+        // are worth stopping her for.
+        if (isCosmeticFix(f.word, f.suggestion)) continue;
         if (rejectedGuesses.current[f.word.toLowerCase()]?.has(f.suggestion.toLowerCase())) continue;
         return { word: f.word, suggestion: f.suggestion, kind: f.kind, retryable: false, exhausted: false };
       }

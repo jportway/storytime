@@ -7,6 +7,21 @@ export * from './misspellings.js';
 export * from './reversals.js';
 export * from './phonetic.js';
 
+/**
+ * Is the only difference between what she wrote and the suggestion
+ * cosmetic — capitalisation, an apostrophe, other punctuation?
+ *
+ * These are never allowed to stand between her and sending a turn. A
+ * missing apostrophe in "dont" or a lowercase "i" is not what this project
+ * is for, and stopping her over one is exactly the pedantic-red-pen
+ * experience it exists to avoid. The owl may still mention them in passing
+ * while she writes; they just never block.
+ */
+export function isCosmeticFix(original: string, suggestion: string): boolean {
+  const bare = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return bare(original) === bare(suggestion);
+}
+
 export interface SpellCheckerOptions {
   /** Words the checker treats as correct. */
   words: Iterable<string>;

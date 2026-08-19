@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { zodOutputFormat } from '@anthropic-ai/sdk/helpers/zod';
+import { isCosmeticFix } from '@storytime/shared';
 import { config } from '../config.js';
 import { anthropic, assertWithinBudget, loadPrompt, recordUsage } from './client.js';
 
@@ -48,7 +49,12 @@ export async function checkBeforeSend(
       output_config: { format: zodOutputFormat(schema) },
     });
     recordUsage(response.usage);
-    return response.parsed_output?.issues ?? [];
+    // Belt and braces with the prompt: capitalisation and punctuation never
+    // block a send, so drop anything whose only change is cosmetic even if
+    // the model decides to raise it anyway.
+    return (response.parsed_output?.issues ?? []).filter(
+      (i) => !isCosmeticFix(i.original, i.suggestion),
+    );
   } catch (err) {
     // Never block sending because this check itself failed.
     console.error('[send-check] failed, letting it through:', err);
