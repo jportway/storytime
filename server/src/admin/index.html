@@ -23,6 +23,13 @@
     border-bottom: 1px solid #333338;
     padding-bottom: 6px;
   }
+  h3 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #9a9aa5;
+    margin: 18px 0 4px;
+  }
   .sub { color: #8a8a95; margin: 0 0 20px; font-size: 12px; }
   select, input[type=text], textarea {
     background: #26262c;
@@ -313,6 +320,8 @@ function render() {
   app.appendChild(renderPlaces());
   app.appendChild(renderThings());
   app.appendChild(renderThreads());
+  app.appendChild(renderArcs());
+  app.appendChild(renderTrouble());
 }
 
 function renderMeta() {
@@ -678,6 +687,154 @@ function renderThreads() {
             status: 'open',
             createdBy: 'ai',
           });
+          render();
+        },
+      }),
+    ]),
+  );
+  return section;
+}
+
+/**
+ * Arcs and trouble are the only part of this editor that describes what a
+ * story will *do* rather than what is in it. They are read by the director,
+ * never by the storyteller, and Cooper never sees a word of either.
+ */
+function renderArcs() {
+  bible.arcs = bible.arcs || [];
+  const section = el('div', {});
+  section.appendChild(el('h2', { text: `Arcs (${bible.arcs.length})` }));
+  section.appendChild(
+    el('p', {
+      class: 'hint',
+      text:
+        'Shapes a story here can take. One is picked at random when a story starts, ' +
+        'and its destination is then fixed — the engine steers towards it but never ' +
+        'fights her for it.',
+    }),
+  );
+  if (!bible.arcs.length) section.appendChild(el('p', { class: 'empty', text: 'None yet.' }));
+
+  for (const a of bible.arcs) {
+    a.phases = a.phases || [];
+    const card = el('div', { class: 'card' });
+    card.appendChild(
+      el('div', { class: 'card-head' }, [
+        el('strong', { text: a.name || '(unnamed arc)' }),
+        el('button', {
+          class: 'danger',
+          text: 'Delete',
+          onclick: () => {
+            bible.arcs = bible.arcs.filter((x) => x !== a);
+            render();
+          },
+        }),
+      ]),
+    );
+    card.appendChild(field('Name', textInput(a.name, (v) => (a.name = v))));
+    card.appendChild(
+      field(
+        'Destination — what "finished" looks like',
+        textInput(a.destination, (v) => (a.destination = v), 'textarea'),
+      ),
+    );
+
+    card.appendChild(el('h3', { text: `Phases (${a.phases.length})` }));
+    for (const [i, ph] of a.phases.entries()) {
+      card.appendChild(
+        el('div', { class: 'rel-row', style: 'grid-template-columns: 1fr 2fr auto;' }, [
+          textInput(ph.name, (v) => (ph.name = v)),
+          textInput(ph.intent, (v) => (ph.intent = v)),
+          el('button', {
+            class: 'danger',
+            text: '\u00d7',
+            onclick: () => {
+              a.phases.splice(i, 1);
+              render();
+            },
+          }),
+        ]),
+      );
+    }
+    card.appendChild(
+      el('div', { class: 'add-row' }, [
+        el('button', {
+          text: '+ Phase',
+          onclick: () => {
+            a.phases.push({ name: '', intent: '' });
+            render();
+          },
+        }),
+      ]),
+    );
+    section.appendChild(card);
+  }
+
+  section.appendChild(
+    el('div', { class: 'add-row' }, [
+      el('button', {
+        class: 'primary',
+        text: '+ New arc',
+        onclick: () => {
+          const id = uniqueId('new-arc', bible.arcs.map((a) => a.id));
+          bible.arcs.push({ id, name: '', destination: '', phases: [] });
+          render();
+        },
+      }),
+    ]),
+  );
+  return section;
+}
+
+function renderTrouble() {
+  bible.trouble = bible.trouble || [];
+  const section = el('div', {});
+  section.appendChild(el('h2', { text: `Trouble (${bible.trouble.length})` }));
+  section.appendChild(
+    el('p', {
+      class: 'hint',
+      text:
+        'Pressure the director can play, once each, to move a story along. ' +
+        'Leave "suits" empty to let a card be played at any point, or name ' +
+        'phases to hold it back until then. Things Cooper invents during a ' +
+        'story are always preferred over these.',
+    }),
+  );
+  if (!bible.trouble.length) section.appendChild(el('p', { class: 'empty', text: 'None yet.' }));
+
+  for (const c of bible.trouble) {
+    const card = el('div', { class: 'card' });
+    card.appendChild(
+      el('div', { class: 'card-head' }, [
+        el('strong', { text: c.id }),
+        el('button', {
+          class: 'danger',
+          text: 'Delete',
+          onclick: () => {
+            bible.trouble = bible.trouble.filter((x) => x !== c);
+            render();
+          },
+        }),
+      ]),
+    );
+    card.appendChild(field('What happens', textInput(c.text, (v) => (c.text = v), 'textarea')));
+    card.appendChild(
+      field(
+        'Suits phases (comma separated, blank for any)',
+        listInput(c.suits, (v) => (c.suits = v)),
+      ),
+    );
+    section.appendChild(card);
+  }
+
+  section.appendChild(
+    el('div', { class: 'add-row' }, [
+      el('button', {
+        class: 'primary',
+        text: '+ New trouble',
+        onclick: () => {
+          const id = uniqueId('new-trouble', bible.trouble.map((c) => c.id));
+          bible.trouble.push({ id, text: '', suits: [] });
           render();
         },
       }),

@@ -121,15 +121,31 @@ export async function loadTemplate(): Promise<GrimwoodTemplate> {
     const raw = await fs
       .readFile(config.paths.grimwoodTemplate, 'utf8')
       .catch(() => null);
-    if (!raw) return GRIMWOOD_TEMPLATE;
+    if (!raw) return withArcs(GRIMWOOD_TEMPLATE);
     try {
-      return JSON.parse(raw) as GrimwoodTemplate;
+      return withArcs(JSON.parse(raw) as GrimwoodTemplate);
     } catch {
-      return GRIMWOOD_TEMPLATE;
+      return withArcs(GRIMWOOD_TEMPLATE);
     }
   }
 
-  return parse<GrimwoodTemplate>(await blobs.read(TEMPLATE_KEY)) ?? GRIMWOOD_TEMPLATE;
+  return withArcs(
+    parse<GrimwoodTemplate>(await blobs.read(TEMPLATE_KEY)) ?? GRIMWOOD_TEMPLATE,
+  );
+}
+
+/**
+ * A template saved before arcs existed has neither key, and the deployed
+ * bucket holds exactly such a template. Defaulting them to empty here means
+ * the rest of the server never has to ask: no arcs simply means no plan, and
+ * a story with no plan behaves precisely as it always did.
+ */
+function withArcs(template: GrimwoodTemplate): GrimwoodTemplate {
+  return {
+    ...template,
+    arcs: template.arcs ?? [],
+    trouble: template.trouble ?? [],
+  };
 }
 
 export async function saveTemplate(template: GrimwoodTemplate): Promise<void> {

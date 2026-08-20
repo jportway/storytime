@@ -91,8 +91,23 @@ adminRouter.put('/template', wrap(async (req, res) => {
     return;
   }
 
-  const { title, genre, tone, premise, worldRules, characters, places, things, threads, currentScene } =
-    req.body;
+  // This list is the template's actual schema as far as saving is concerned.
+  // Anything absent from it is dropped silently on save — which looks exactly
+  // like the editor working, right up until you reload.
+  const {
+    title,
+    genre,
+    tone,
+    premise,
+    worldRules,
+    characters,
+    places,
+    things,
+    threads,
+    arcs,
+    trouble,
+    currentScene,
+  } = req.body;
   const template: GrimwoodTemplate = {
     title,
     genre,
@@ -103,6 +118,8 @@ adminRouter.put('/template', wrap(async (req, res) => {
     places,
     things,
     threads,
+    arcs: arcs ?? [],
+    trouble: trouble ?? [],
     currentScene,
   };
 
