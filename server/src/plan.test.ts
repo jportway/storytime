@@ -107,9 +107,26 @@ describe('applyPlanUpdate', () => {
     plan = applyPlanUpdate(plan, update(), 1);
     expect(plan.phase).toBe(0);
     plan = applyPlanUpdate(plan, update(), 2);
-    expect(plan.phase).toBe(0);
-    plan = applyPlanUpdate(plan, update(), 3);
     expect(plan.phase).toBe(1);
+  });
+
+  it('reaches the end in about ten beats even if told nothing useful', () => {
+    // Five phases is the shape every seeded arc uses, and a director that
+    // never commits to a phase being finished is the realistic case.
+    const fivePhase: Arc = {
+      id: 'five',
+      name: 'Five',
+      destination: 'somewhere',
+      phases: [1, 2, 3, 4, 5].map((n) => ({ name: `p${n}`, intent: 'x' })),
+    };
+    let plan = dealArc([fivePhase], 0)!;
+    let landedAt = 0;
+    for (let beat = 1; beat <= 20 && !landedAt; beat += 1) {
+      plan = applyPlanUpdate(plan, update({ phaseComplete: false }), beat);
+      if (plan.landing) landedAt = beat;
+    }
+    expect(landedAt).toBeGreaterThanOrEqual(9);
+    expect(landedAt).toBeLessThanOrEqual(11);
   });
 
   it('does not drift: the destination survives a whole story', () => {
@@ -157,6 +174,34 @@ describe('applyPlanUpdate', () => {
     expect(plan.nextMove.instrument).toBe('none');
   });
 
+  it('will not let something happen to her story while she is driving', () => {
+    let plan = dealArc([arcs()[0]!], 0)!;
+    plan = applyPlanUpdate(
+      plan,
+      update({
+        sheIsDriving: true,
+        nextMove: { instrument: 'complication', intent: 'the roof caves in' },
+      }),
+      1,
+    );
+    // Downgraded, not discarded: the aim survives, the intrusion does not.
+    expect(plan.nextMove.instrument).toBe('fork');
+    expect(plan.nextMove.intent).toBe('the roof caves in');
+  });
+
+  it('leaves the complication alone when she is not driving', () => {
+    let plan = dealArc([arcs()[0]!], 0)!;
+    plan = applyPlanUpdate(
+      plan,
+      update({
+        sheIsDriving: false,
+        nextMove: { instrument: 'complication', intent: 'the roof caves in' },
+      }),
+      1,
+    );
+    expect(plan.nextMove.instrument).toBe('complication');
+  });
+
   it('discards a malformed move rather than passing it to the prompt', () => {
     let plan = dealArc([arcs()[0]!], 0)!;
     plan = applyPlanUpdate(
@@ -175,8 +220,9 @@ describe('serializePlanNote', () => {
     ...over,
   });
 
-  it('says nothing at all while she is driving', () => {
-    expect(serializePlanNote(planWith({ sheIsDriving: true }))).toBe('');
+  it('still aims the fork while she is driving — an offer is not a shove', () => {
+    const note = serializePlanNote(planWith({ sheIsDriving: true }));
+    expect(note).toContain('Aim the fork at: the open bin');
   });
 
   it('says nothing when there is no move to make', () => {

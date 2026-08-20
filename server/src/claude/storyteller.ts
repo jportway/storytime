@@ -27,6 +27,13 @@ export interface BeatResult {
   redirected: boolean;
   /** The beat resolved the story rather than forking. */
   landing: boolean;
+  /**
+   * Token usage for this beat. Only the replay harness reads it, and the
+   * cache figures are the reason it exists: if a change ever breaks the
+   * append-only prefix, cacheRead collapses to zero and every beat of every
+   * story silently starts costing full price.
+   */
+  usage: { input: number; output: number; cacheRead: number };
 }
 
 export interface StreamCallbacks {
@@ -159,6 +166,7 @@ export class Storyteller {
         chapterTitle: null,
         redirected: true,
         landing: false,
+        usage: usageOf(message.usage),
       };
     }
 
@@ -175,6 +183,7 @@ export class Storyteller {
       chapterTitle: parser.chapterTitle,
       redirected: false,
       landing: tail.landing,
+      usage: usageOf(message.usage),
     };
   }
 
@@ -224,4 +233,16 @@ export class Storyteller {
     }
     return messages;
   }
+}
+
+function usageOf(usage: {
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_read_input_tokens?: number | null;
+}): { input: number; output: number; cacheRead: number } {
+  return {
+    input: usage.input_tokens ?? 0,
+    output: usage.output_tokens ?? 0,
+    cacheRead: usage.cache_read_input_tokens ?? 0,
+  };
 }

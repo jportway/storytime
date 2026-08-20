@@ -28,11 +28,13 @@ import type {
 /**
  * How long a phase may last before it is moved along regardless.
  *
- * Without this the story can idle: each turn looks locally like the phase is
- * not quite finished, and five phases of "not quite yet" is how a ten-beat
- * story becomes a thirty-beat one.
+ * Without this the story idles: each turn looks locally like the phase is not
+ * quite finished, and five phases of "not quite yet" is how a ten-beat story
+ * becomes a thirty-beat one. In practice the director says a phase is
+ * finished rarely enough that this ceiling, not its judgement, is what sets
+ * the pace — so with five phases it is also what makes TARGET_BEATS true.
  */
-const MAX_BEATS_IN_PHASE = 3;
+const MAX_BEATS_IN_PHASE = 2;
 
 /** Roughly how long an arc should run. Used for the note, not enforced. */
 export const TARGET_BEATS = 10;
@@ -105,6 +107,14 @@ export function applyPlanUpdate(
     }
     next.sheIsDriving = Boolean(update.sheIsDriving);
     next.nextMove = sanitiseMove(update.nextMove);
+
+    // She has momentum, so nothing may *happen* to her story this turn. The
+    // aim of the closing line still goes through: a fork is an offer she can
+    // walk straight past, whereas a complication is the engine actually
+    // spending a turn of her story on its own purposes.
+    if (next.sheIsDriving && next.nextMove.instrument === 'complication') {
+      next.nextMove = { ...next.nextMove, instrument: 'fork' };
+    }
   }
 
   // Advance on the director's say-so, or because the phase has run long. One
@@ -177,9 +187,19 @@ export function availableTrouble(bible: StoryBible): string[] {
 /**
  * The stage note appended to Cooper's direction, or '' for silence.
  *
- * Silence is the common case and the important one. When she is driving, the
- * storyteller should see exactly what it saw before any of this existed —
- * not a note politely asking it to stand down.
+ * Silence is a real and frequent answer: the director returns `none` whenever
+ * it has nothing worth saying, and a story that gets a note every single turn
+ * is being nagged rather than steered.
+ *
+ * Note the one thing this deliberately does *not* do: it does not go silent
+ * merely because she was driving last turn. It cannot — `sheIsDriving`
+ * describes the beat that has already been written, while this note travels
+ * with the direction she is about to give, which nobody has read yet.
+ * Suppressing on it silenced the director for six turns of an eight-turn
+ * replay, including the one input in the whole script vague enough to
+ * actually need steering. What driving suppresses instead is the
+ * complication, in applyPlanUpdate — the only instrument that spends a turn
+ * of her story rather than merely offering her something.
  *
  * It stays short because it lives in the conversation permanently: the
  * transcript is append-only so that the prompt cache survives, which means
@@ -187,7 +207,6 @@ export function availableTrouble(bible: StoryBible): string[] {
  */
 export function serializePlanNote(plan: StoryPlan | null | undefined): string {
   if (!plan) return '';
-  if (plan.sheIsDriving) return '';
   if (plan.nextMove.instrument === 'none' || !plan.nextMove.intent) return '';
 
   const phase = plan.phases[plan.phase];
