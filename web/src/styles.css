@@ -113,10 +113,10 @@ button:disabled {
 }
 
 .welcome-owl {
-  width: 210px;
-  height: 235px;
-  color: var(--ink);
+  width: 240px;
+  height: 240px;
   margin-bottom: 1.2rem;
+  background: url(/owl/still.webp) center / contain no-repeat;
 }
 
 .welcome h1 {
@@ -595,11 +595,21 @@ button:disabled {
   padding: 0;
   background: none;
   border-radius: 0;
-  color: var(--ink);
-  transition: width 0.18s ease, height 0.18s ease, color 0.2s ease,
-    opacity 0.2s ease;
+  transition: width 0.18s ease, height 0.18s ease, opacity 0.2s ease;
   /* The art is 70px but the tap target must not be. */
   position: relative;
+}
+
+/*
+ * Each pose is a sprite sheet of complete drawings of that pose, cycled in a
+ * shuffled order so the ink boils. Nothing here scales, tints or filters the
+ * art: a transformed brush drawing looks like a transformed brush drawing.
+ */
+.owl-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-repeat: no-repeat;
 }
 
 .owl::after {
@@ -613,16 +623,8 @@ button:disabled {
   height: 107px;
 }
 
-.owl-happy {
-  color: var(--hers);
-}
-
 .owl-quiet {
   opacity: 0.55;
-}
-
-.owl-thinking {
-  animation: bob 1.1s ease-in-out infinite;
 }
 
 /*

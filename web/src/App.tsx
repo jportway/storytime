@@ -22,7 +22,6 @@ import {
   ordinal,
 } from './components/Story.js';
 import { Owl, type SendGate } from './components/Owl.js';
-import { OwlArt } from './components/OwlArt.js';
 import { WritingBox } from './components/WritingBox.js';
 
 export function App() {
@@ -423,9 +422,7 @@ export function App() {
   if (!bible) {
     return (
       <div className="welcome">
-        <div className="welcome-owl">
-          <OwlArt mood="calm" branch />
-        </div>
+        <div className="welcome-owl" aria-hidden="true" />
         <h1>Storytime</h1>
         <p className="welcome-sub">You're going to write a comic book.</p>
         <button className="start" onClick={() => void start()}>

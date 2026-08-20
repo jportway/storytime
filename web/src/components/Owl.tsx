@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { HelpKind, OwlHelp, OwlResponse } from '@storytime/shared';
-import { OwlArt, type OwlMood } from './OwlArt.js';
+import { OwlArt, useOwlPerformance, type OwlState } from './OwlArt.js';
 
 /**
  * A word flagged during the pre-send spelling check — a guess she can
@@ -125,15 +125,19 @@ export function Owl({
   const nudge = response?.nudge && !activeHelp && !gate ? response.nudge : null;
 
   const speaking = Boolean(gate || board || praise || nudge || checkingSend);
-  const mood: OwlMood = praise ? 'happy' : speaking ? 'awake' : 'calm';
 
-  const owlClasses = [
-    'owl',
-    speaking ? 'owl-big' : '',
-    thinking || checkingSend ? 'owl-thinking' : '',
-    praise ? 'owl-happy' : '',
-    streaming ? 'owl-quiet' : '',
-  ]
+  // He is a drawing, not a tinted shape: every mood is a different set of
+  // brush strokes rather than a CSS filter over one of them.
+  const state: OwlState = praise
+    ? 'pleased'
+    : thinking || checkingSend
+      ? 'thinking'
+      : speaking
+        ? 'talking'
+        : 'resting';
+  const pose = useOwlPerformance(state);
+
+  const owlClasses = ['owl', speaking ? 'owl-big' : '', streaming ? 'owl-quiet' : '']
     .filter(Boolean)
     .join(' ');
 
@@ -145,7 +149,7 @@ export function Owl({
         title="Ask the owl for help"
         aria-label="Ask the owl for help"
       >
-        <OwlArt mood={mood} />
+        <OwlArt mood={pose} />
       </button>
 
       <div className="owl-overlay" aria-live="polite">
