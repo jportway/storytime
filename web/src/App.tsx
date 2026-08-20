@@ -65,6 +65,13 @@ export function App() {
   const dividerRef = useRef<HTMLDivElement>(null);
   /** End of the real story text, before the scroll spacer. */
   const endRef = useRef<HTMLDivElement>(null);
+  /**
+   * Where to jump when a book is opened off the shelf. A finished book opens
+   * at the beginning, because that is what you do with a book you finished.
+   * One still being written opens at the end, where she left off — and where
+   * the question she has not answered yet is.
+   */
+  const openAt = useRef<'top' | 'end' | null>(null);
   /** The beat the one-shot scroll has already fired for. */
   const scrolledForBeat = useRef<number | null>(null);
   const speech = useSpeech();
@@ -176,8 +183,13 @@ export function App() {
     setBeats(saved.beats);
     setCredit(savedCredit);
     setDraft('');
-    setLanded(false);
-    setFork(saved.beats[saved.beats.length - 1]?.fork ?? '');
+    const last = saved.beats[saved.beats.length - 1];
+    setFork(last?.fork ?? '');
+    openAt.current = saved.finishedAt ? 'top' : 'end';
+    // A story put down on a landing beat is still waiting for her answer.
+    // Clearing this on open would strand her: the beat resolved, so there is
+    // no cliffhanger to write from and no choice on screen either.
+    setLanded(Boolean(last?.landing) && !saved.finishedAt);
   }, []);
 
   const chooseEnd = useCallback(async () => {
@@ -395,6 +407,39 @@ export function App() {
   const beatBoundary = livePanels.length > 0 ? beats.length + 1 : beats.length;
 
   useEffect(() => {
+    const where = openAt.current;
+    if (where) {
+      openAt.current = null;
+      const pane = paneRef.current;
+      if (pane) {
+        // Claim this boundary so the per-beat rule doesn't immediately
+        // scroll somewhere else, and jump without animation — she asked for
+        // this book, she should simply be in it.
+        scrolledForBeat.current = beatBoundary;
+
+        if (where === 'top') {
+          pane.scrollTop = 0;
+        } else {
+          // Against endRef rather than scrollHeight: the spacer beneath the
+          // story is most of a screen tall, so scrolling to the bottom of the
+          // scroller lands in blank paper with the story off above.
+          const end = endRef.current;
+          const gap = 170; // clears the ending row
+          pane.scrollTop = end
+            ? Math.max(
+                0,
+                end.getBoundingClientRect().top -
+                  pane.getBoundingClientRect().top +
+                  pane.scrollTop -
+                  pane.clientHeight +
+                  gap,
+              )
+            : pane.scrollHeight;
+        }
+        return;
+      }
+    }
+
     if (beatBoundary === 0 || scrolledForBeat.current === beatBoundary) return;
     // Wait for the divider to exist; the opening beat has none, and there is
     // nothing above it to scroll away from anyway.
