@@ -4,10 +4,11 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch --conditions=development src/index.ts",
     "start": "node dist/index.js",
-    "build": "tsc -b",
-    "replay": "tsx src/replay.ts"
+    "build": "tsc -b && npm run copy-assets",
+    "copy-assets": "rm -rf dist/prompts dist/admin && mkdir -p dist && cp -R src/prompts src/admin dist/",
+    "replay": "tsx --conditions=development src/replay.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.117.1",

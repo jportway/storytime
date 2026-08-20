@@ -1,0 +1,27 @@
+# Never bake secrets into an image.
+.env
+.env.local
+
+node_modules
+**/node_modules
+
+# Force a fresh compile in the builder rather than shipping whatever happened
+# to be on the developer's laptop.
+dist
+**/dist
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Cooper's stories, her writing profile and the audio cache are personal and
+# machine-local. They belong in the storage bucket, never in the image.
+data
+server/.cache
+
+.git
+.github
+.idea
+.vscode
+.claude
+*.log
+.DS_Store
+README.md
