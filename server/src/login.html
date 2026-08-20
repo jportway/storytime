@@ -3,15 +3,28 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Grimwood</title>
+    <title>Storytime</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,300..600&display=swap"
+      rel="stylesheet"
+    />
     <style>
+      /*
+       * These tokens mirror web/src/styles.css. This page is the first thing
+       * anyone sees, and it used to be a dark green screen with an emoji owl
+       * on it, which read as a different application entirely.
+       */
       :root {
-        color-scheme: dark;
-        --ink: #f2ede4;
-        --dim: #9b9184;
-        --edge: #2f3a33;
-        --field: #17201b;
-        --accent: #8fc08a;
+        color-scheme: light;
+        --paper: #f7f2e8;
+        --panel-bg: #fffdf8;
+        --ink: #241d14;
+        --dim: rgba(36, 29, 20, 0.6);
+        --edge: #d9cdb4;
+        --field: #fffdf8;
+        --accent: #a8552a;
       }
       * {
         box-sizing: border-box;
@@ -22,7 +35,7 @@
         display: grid;
         place-items: center;
         padding: 1.5rem;
-        background: radial-gradient(circle at 50% 0%, #1d2721 0%, #0e1411 70%);
+        background: var(--paper);
         color: var(--ink);
         font: 16px/1.5 ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui,
           sans-serif;
@@ -32,14 +45,17 @@
         text-align: center;
       }
       .owl {
-        font-size: 3.5rem;
-        line-height: 1;
-        margin-bottom: 0.75rem;
+        width: 150px;
+        height: 150px;
+        margin: 0 auto 0.5rem;
+        background: url(/owl/still.webp) center / contain no-repeat;
       }
       h1 {
         margin: 0 0 0.35rem;
-        font-size: 1.5rem;
-        letter-spacing: 0.01em;
+        font-family: Newsreader, Georgia, "Times New Roman", serif;
+        font-size: 2.4rem;
+        font-weight: 400;
+        letter-spacing: -0.01em;
       }
       p {
         margin: 0 0 1.5rem;
@@ -66,7 +82,7 @@
         padding: 0.85rem 1rem;
         font: inherit;
         font-weight: 600;
-        color: #10201a;
+        color: #fff;
         background: var(--accent);
         border: 0;
         border-radius: 0.7rem;
@@ -79,15 +95,15 @@
       .error {
         min-height: 1.4rem;
         margin-top: 0.85rem;
-        color: #e8a0a0;
+        color: #a33c3c;
         font-size: 0.9rem;
       }
     </style>
   </head>
   <body>
     <form id="form">
-      <div class="owl" aria-hidden="true">🦉</div>
-      <h1 id="heading">Grimwood</h1>
+      <div class="owl" aria-hidden="true"></div>
+      <h1 id="heading">Storytime</h1>
       <p id="sub">Frank wants the password.</p>
       <input
         id="password"

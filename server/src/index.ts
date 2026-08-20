@@ -57,6 +57,15 @@ app.get('/api/health', (req, res) => {
 const loginPage = path.join(here, 'login.html');
 app.get(['/login', '/admin/login'], (_req, res) => res.sendFile(loginPage));
 
+// The owl on the login page, and only the owl. Everything else in the SPA
+// bundle sits behind requireApp below, which is why this door needs its own
+// key — a picture of an owl is not what the password is protecting.
+app.get('/owl/still.webp', (_req, res, next) => {
+  const owl = path.join(config.paths.webDist, 'owl', 'still.webp');
+  if (!fs.existsSync(owl)) return next();
+  res.sendFile(owl);
+});
+
 app.post('/api/login', (req, res) => {
   const scope: Scope = req.body?.scope === 'admin' ? 'admin' : 'app';
 

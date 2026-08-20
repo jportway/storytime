@@ -255,7 +255,12 @@ function checkboxList(allItems, selectedIds, onToggle) {
 const TEMPLATE_ID = '__template__';
 
 async function loadStoryList() {
-  const stories = await fetch('/api/stories').then((r) => r.json());
+  // /api/admin/stories, not /api/stories: the latter is behind the game
+  // password, which an admin session does not have.
+  const raw = await fetch('/api/admin/stories').then((r) => r.json()).catch(() => []);
+  // Never let a bad response take the whole editor down with it — the
+  // template is the thing you came here for and it loads separately.
+  const stories = Array.isArray(raw) ? raw : [];
   picker.innerHTML = '';
   picker.appendChild(
     el('option', { value: TEMPLATE_ID, text: '— Default template (used for every new story) —' }),

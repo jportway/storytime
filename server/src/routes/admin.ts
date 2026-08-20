@@ -3,7 +3,7 @@ import { wrap } from '../asyncRoute.js';
 import type { GrimwoodTemplate, StoryBible } from '@storytime/shared';
 import { properNouns } from '../bible.js';
 import { getSession } from '../sessions.js';
-import { loadTemplate, saveStory, saveTemplate } from '../store.js';
+import { listStories, loadTemplate, saveStory, saveTemplate } from '../store.js';
 
 export const adminRouter = Router();
 
@@ -80,6 +80,20 @@ function isValidTemplate(body: unknown): body is GrimwoodTemplate {
     b.currentScene !== null
   );
 }
+
+/**
+ * The story list, behind the admin gate.
+ *
+ * The editor cannot use /api/stories: that sits behind the *game* password,
+ * and an admin session does not have it. Signed in as admin only, that
+ * endpoint returns `{error}` rather than an array, the picker's `for…of`
+ * threw, and the whole page rendered nothing — which looked exactly like
+ * "the template won't load". Invisible on a laptop, where no passwords are
+ * set and both gates stand open.
+ */
+adminRouter.get('/stories', wrap(async (_req, res) => {
+  res.json(await listStories());
+}));
 
 adminRouter.get('/template', wrap(async (_req, res) => {
   res.json(await loadTemplate());
