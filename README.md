@@ -108,21 +108,29 @@ Cooper types  ──▶  owl (Haiku)          ──▶  spoken help + board
      │             + local spell check
      ▼
   normalise  ──▶  storyteller (Opus 5)  ──▶  streamed panels + a fork
-                        │
-                        └──▶  archivist (Haiku)  ──▶  story bible
+     ▲                  │
+     │                  ├──▶  archivist (Haiku)  ──▶  story bible
+     │                  │                                (in parallel)
+     └── stage note ◀───┴──▶  director (Haiku)   ──▶  the plan
 ```
 
-**Four model roles.** The storyteller (`claude-opus-5`, streaming) writes the
-prose. The archivist (`claude-haiku-4-5`) extracts state changes in the
-background while she reads, so its latency is free. The owl coach
-(`claude-haiku-4-5`) handles writing help. A seeder will replace the fixed
-cast later.
+**Model roles.** The storyteller (`claude-opus-5`, streaming) writes the
+prose. Everything else is `claude-haiku-4-5` and runs off the critical path.
+The archivist extracts state changes while she reads. The director decides
+where the story is heading (below). A titler names the book, once, when she
+finishes it. The owl coach handles writing help. A seeder will replace the
+fixed cast later.
+
+The archivist and the director run *in parallel* on the same beat. The
+archivist already gates the response — the writing box stays disabled until
+it returns — so a sequential director call would have added its whole latency
+to the time she cannot type.
 
 **Two memories.** The storyteller's memory is the conversation itself — the
 system prompt is static and history only appends, so prompt caching works
 naturally. The *bible* is a separate structured record maintained by the
-archivist, used for the Who's Who page, credit tracking, save/resume, and
-(later) character consistency in generated art. The bible is deliberately
+archivist, used for credit tracking, save/resume, the director's view of the
+world, and (later) character consistency in generated art. The bible is deliberately
 **not** re-injected each turn; that would change the cached prefix and throw
 the cache away on every beat. Every ~8 beats it re-grounds via a
 mid-conversation `system` message, which preserves the cache.
@@ -136,6 +144,9 @@ These are load-bearing. If something is ambiguous, resolve it against these.
 2. **Her words survive.** The storyteller reuses her distinctive phrasing
    verbatim, so she can find her own words in the story.
 3. **The AI never resolves what she set up.** It sets up; it doesn't pay off.
+   The single exception is the landing beat, where the story has to close —
+   and even there the storyteller's job is to make sure the fork she answers
+   at beat nine *is* the climax, not to write the ending for her.
 4. **The owl never blocks, never shames, never nags.** Corrections are offered,
    never applied automatically. Send is always live. Once she's mastered a
    word the owl stops mentioning it.
@@ -145,6 +156,56 @@ These are load-bearing. If something is ambiguous, resolve it against these.
 6. **Redirect, don't refuse.** If a direction goes out of bounds the story
    bends in-fiction — a door slams, someone interrupts. She never sees a
    refusal or an error dialog.
+
+## Where a story is heading
+
+Everything above is reactive: she types, the storyteller writes the smallest
+beat that makes her idea real, and it stops on a cliffhanger. That is the
+right instinct, but on its own it means a story never arrives anywhere and
+never ends.
+
+A **director** runs after each beat and keeps a private plan. Cooper never
+sees any of it, and the storyteller sees at most two lines.
+
+**The plan is data, not prose.** The obvious design — hold a written plan and
+revise it each turn — fails, and it fails quietly. A model asked to reconcile
+a plan with what just happened rewrites the plan to describe what just
+happened, so within about three turns the plan is a summary. Here the arc's
+`destination` and `phases` are frozen when it is dealt and have **no field in
+the director's output schema**. It cannot rewrite the destination because it
+is given nowhere to say so. `plan.ts` owns the phase index, the card
+bookkeeping and the pacing; the model answers only what needs a reader.
+
+**It aims the fork, not the beat.** The fork is already the steering wheel —
+it just used to steer at random. A fork is an *offer*: she can walk straight
+past it, and the prompt has always insisted she must be able to invent a
+third option nobody thought of. The other lever is the one small complication
+the storyteller was already allowed, so the director never gets a bigger
+share of her story — it chooses what the existing share is about.
+
+**When she is driving, nothing happens to her story that she didn't ask
+for.** The director reports whether her direction carried a real intention.
+When it did, the complication is downgraded to a fork — aiming survives, the
+intrusion doesn't. If a note and her direction ever pull different ways, the
+storyteller is told plainly that hers wins and the note is discarded.
+
+**Pressure prefers her own material.** Everything in the bible is tagged
+`createdBy`. Bringing back the giant worm *she* invented four beats ago
+steers the story and hands her back something of hers; it is the only lever
+here that doesn't spend a little of her authorship to buy control. Authored
+trouble cards, edited in `/admin`, are the fallback.
+
+**Stories end.** Five phases at a two-beat ceiling puts the landing at around
+beat ten. The last beat resolves instead of forking (`[LANDING]`) and she is
+asked whether that was the end. If she says yes the book is named — at the
+end, because that is the first moment there is anything to name — and goes on
+the shelf. If she says keep going, a different arc is dealt and the story
+carries on with no visible seam, so one session can hold several complete
+little stories.
+
+Arcs and trouble live in the template and are edited in `/admin`. **A
+template with no arcs deals no plan, and a story with no plan behaves exactly
+as it did before any of this existed.**
 
 ## The spelling engine
 
@@ -166,9 +227,9 @@ teaches her that inventing things is an error.
 ## Layout
 
 ```
-shared/     types, the fixed Grimwood cast, the spelling engine
-server/     express + SSE, the three Claude roles, prompts as markdown
-web/        React SPA — panels, writing box, owl, Who's Who
+shared/     types, the fixed Cooperworld cast and arcs, the spelling engine
+server/     express + SSE, the Claude roles, prompts as markdown
+web/        React SPA — the shelf, panels, writing box, owl
 data/       her stories and writing profile (gitignored)
 ```
 
