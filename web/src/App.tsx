@@ -35,6 +35,16 @@ export function App() {
   const [fork, setFork] = useState('');
   const [writing, setWriting] = useState(false);
 
+  /**
+   * The beat on screen resolved the story. She is being asked whether that
+   * was the end, and until she answers there is nothing else to do — which
+   * is why this replaces the writing box rather than sitting beside it.
+   */
+  const [landed, setLanded] = useState(false);
+  const [closing, setClosing] = useState(false);
+  /** Finished books, for the shelf. Loaded once, on the welcome screen. */
+  const [shelf, setShelf] = useState<api.StorySummary[]>([]);
+
   const [draft, setDraft] = useState('');
   const [whatsNew, setWhatsNew] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -94,6 +104,7 @@ export function App() {
       setFork('');
       setLiveChapter(null);
       setLastDirection(direction);
+      setLanded(false);
       setError(null);
 
       try {
@@ -104,6 +115,10 @@ export function App() {
               break;
             case 'fork':
               setFork(event.text);
+              break;
+            case 'landing':
+              setFork(event.text);
+              setLanded(true);
               break;
             case 'chapter':
               setLiveChapter(event.title);
@@ -144,9 +159,56 @@ export function App() {
     setBible(fresh);
     setBeats([]);
     setDraft('');
+    setLanded(false);
     await runBeat(fresh.storyId, null);
     setCredit(await api.getStory(fresh.storyId).then((s) => s.credit));
   }, [runBeat]);
+
+  /**
+   * Open a book off the shelf.
+   *
+   * Until now a reload lost the story for good — the listing endpoint existed
+   * and nothing ever called it, so thirty stories sat on disk unreachable.
+   */
+  const openStory = useCallback(async (storyId: string) => {
+    const { bible: saved, credit: savedCredit } = await api.getStory(storyId);
+    setBible(saved);
+    setBeats(saved.beats);
+    setCredit(savedCredit);
+    setDraft('');
+    setLanded(false);
+    setFork(saved.beats[saved.beats.length - 1]?.fork ?? '');
+  }, []);
+
+  const chooseEnd = useCallback(async () => {
+    if (!bible) return;
+    setClosing(true);
+    try {
+      const { bible: finished } = await api.finishStory(bible.storyId);
+      setBible(finished);
+      setLanded(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setClosing(false);
+    }
+  }, [bible]);
+
+  const chooseMore = useCallback(async () => {
+    if (!bible) return;
+    setClosing(true);
+    try {
+      // She is told nothing. From where she sits she simply answered the
+      // question and the story carried on.
+      const { bible: next } = await api.continueStory(bible.storyId);
+      setBible(next);
+      setLanded(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setClosing(false);
+    }
+  }, [bible]);
 
   const send = useCallback(
     async (text?: string) => {
@@ -417,21 +479,29 @@ export function App() {
     });
   }, []);
 
+  // Only while she is on the welcome screen: once a story is open the shelf
+  // is stale, and it is reloaded next time she comes back to it anyway.
+  useEffect(() => {
+    if (bible) return;
+    let live = true;
+    void api
+      .listStories()
+      .then((all) => live && setShelf(all))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [bible]);
+
   // ---------------------------------------------------------------------
 
   if (!bible) {
     return (
-      <div className="welcome">
-        <div className="welcome-owl" aria-hidden="true" />
-        <h1>Storytime</h1>
-        <p className="welcome-sub">You're going to write a book.</p>
-        <button className="start" onClick={() => void start()}>
-          Start a Cooperworld story
-        </button>
-        <p className="welcome-foot">
-          The owl will read along and help with the hard words.
-        </p>
-      </div>
+      <Welcome
+        shelf={shelf}
+        onStart={() => void start()}
+        onOpen={(id) => void openStory(id)}
+      />
     );
   }
 
@@ -501,6 +571,14 @@ export function App() {
             </p>
           )}
 
+          {bible.finishedAt && (
+            <div className="the-end">
+              <p className="the-end-mark">THE END</p>
+              <p className="the-end-title">{bible.title}</p>
+              <p className="the-end-by">by Cooper</p>
+            </div>
+          )}
+
           {/* Marks the end of real content, so "More below" measures the
               story rather than the spacer underneath it. */}
           <div ref={endRef} />
@@ -518,7 +596,7 @@ export function App() {
 
       <div className="bottom-fade" aria-hidden="true" />
 
-      {showMoreBelow && (
+      {showMoreBelow && !landed && !bible.finishedAt && (
         <button className="more-below" onClick={pageDown}>
           More below ↓
         </button>
@@ -526,6 +604,36 @@ export function App() {
 
       {whatsNew.length > 0 && <span className="whats-new">{whatsNew[0]}</span>}
 
+      {bible.finishedAt ? (
+        <div className="ending-row">
+          <p className="ending-note">
+            You finished it. It's on the shelf now.
+          </p>
+          <button className="start" onClick={() => setBible(null)}>
+            Back to my books
+          </button>
+        </div>
+      ) : landed ? (
+        <div className="ending-row">
+          <p className="ending-note">Is that the end?</p>
+          <div className="ending-choice">
+            <button
+              className="start"
+              disabled={closing}
+              onClick={() => void chooseEnd()}
+            >
+              {closing ? 'Closing the book…' : 'The End'}
+            </button>
+            <button
+              className="keep-going"
+              disabled={closing}
+              onClick={() => void chooseMore()}
+            >
+              Keep going
+            </button>
+          </div>
+        </div>
+      ) : (
       <div className="composer-row">
         <Owl
           response={owl.response}
@@ -552,6 +660,77 @@ export function App() {
           onExpandedChange={setComposerExpanded}
         />
       </div>
+      )}
+    </div>
+  );
+}
+
+/**
+ * The shelf.
+ *
+ * A finished book she can't open again isn't really a book, and this is also
+ * what makes a generated cover worth having later — the slot below is
+ * deliberately book-shaped and empty.
+ */
+function Welcome({
+  shelf,
+  onStart,
+  onOpen,
+}: {
+  shelf: api.StorySummary[];
+  onStart: () => void;
+  onOpen: (storyId: string) => void;
+}) {
+  const books = shelf.filter((s) => s.finished);
+  // Anything with real writing in it and no ending yet is worth offering back.
+  const unfinished = shelf.filter((s) => !s.finished && s.beats > 1).slice(0, 1);
+
+  return (
+    <div className="welcome">
+      <div className="welcome-owl" aria-hidden="true" />
+      <h1>Storytime</h1>
+      <p className="welcome-sub">You're going to write a book.</p>
+
+      {books.length > 0 && (
+        <div className="shelf">
+          <h2 className="shelf-title">Your books</h2>
+          <div className="shelf-row">
+            {books.map((b) => (
+              <button
+                key={b.storyId}
+                className="book"
+                onClick={() => onOpen(b.storyId)}
+              >
+                {/* The title sits on the cover, because that is where a
+                    title goes. A generated cover replaces this whole face
+                    later without moving anything around it. */}
+                <span className="book-cover">
+                  <span className="book-title">{b.title}</span>
+                  <span className="book-by">Cooper</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <button className="start" onClick={onStart}>
+        Start a Cooperworld story
+      </button>
+
+      {unfinished.map((s) => (
+        <button
+          key={s.storyId}
+          className="carry-on"
+          onClick={() => onOpen(s.storyId)}
+        >
+          …or carry on with {s.title}
+        </button>
+      ))}
+
+      <p className="welcome-foot">
+        The owl will read along and help with the hard words.
+      </p>
     </div>
   );
 }
