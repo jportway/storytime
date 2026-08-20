@@ -8,9 +8,16 @@ import {
 import { applyDelta, properNouns } from './bible.js';
 import { extractDelta } from './claude/archivist.js';
 import { planNext } from './claude/director.js';
+import { nameBook } from './claude/title.js';
 import { applyPlanUpdate, dealArc } from './plan.js';
 import { Storyteller } from './claude/storyteller.js';
-import { loadProfile, loadStory, loadTemplate, saveStory } from './store.js';
+import {
+  loadProfile,
+  loadStory,
+  loadTemplate,
+  saveProfile,
+  saveStory,
+} from './store.js';
 
 /**
  * One in-progress story, held in memory for the life of the process and
@@ -135,6 +142,28 @@ export class Session {
   }
 
   /**
+   * She chose "The End". Give the book its name and close it.
+   *
+   * Idempotent: a second tap of the button, or a reload that re-posts, gets
+   * the same finished book rather than paying to rename it.
+   */
+  async finish(): Promise<StoryBible> {
+    if (this.bible.finishedAt) return this.bible;
+
+    const title = await nameBook(this.bible);
+    if (title) this.bible.title = title;
+    this.bible.finishedAt = new Date().toISOString();
+    this.storyteller.setBible(this.bible);
+
+    const profile = await loadProfile();
+    profile.totals.storiesFinished += 1;
+    await saveProfile(profile);
+
+    await saveStory(this.bible, this.storyteller.getMessages());
+    return this.bible;
+  }
+
+  /**
    * She chose to keep going after the story landed. Deal a fresh shape.
    *
    * The arc just finished is avoided, because two rescues in a row read as
@@ -151,6 +180,10 @@ export class Session {
       finished,
     );
     this.storyteller.setBible(this.bible);
+  }
+
+  async save(): Promise<void> {
+    await saveStory(this.bible, this.storyteller.getMessages());
   }
 }
 

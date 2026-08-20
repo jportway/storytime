@@ -57,6 +57,7 @@ export async function saveStory(
         storyId: bible.storyId,
         title: bible.title,
         beats: String(bible.beats.length),
+        finished: bible.finishedAt ? '1' : '',
         updatedAt: payload.updatedAt,
       },
     },
@@ -72,6 +73,8 @@ export interface StorySummary {
   title: string;
   beats: number;
   updatedAt: string;
+  /** She chose "The End". A finished book, not one still being written. */
+  finished: boolean;
 }
 
 export async function listStories(): Promise<StorySummary[]> {
@@ -81,9 +84,15 @@ export async function listStories(): Promise<StorySummary[]> {
 
   const stories = await Promise.all(
     entries.map(async (entry): Promise<StorySummary | null> => {
-      const { storyId, title, beats, updatedAt } = entry.metadata;
+      const { storyId, title, beats, updatedAt, finished } = entry.metadata;
       if (storyId && title && beats && updatedAt) {
-        return { storyId, title, beats: Number(beats), updatedAt };
+        return {
+          storyId,
+          title,
+          beats: Number(beats),
+          updatedAt,
+          finished: finished === '1',
+        };
       }
 
       // No usable metadata: the local filesystem has nowhere to keep it, and
@@ -96,6 +105,7 @@ export async function listStories(): Promise<StorySummary[]> {
         title: saved.bible.title,
         beats: saved.bible.beats.length,
         updatedAt: saved.updatedAt,
+        finished: Boolean(saved.bible.finishedAt),
       };
     }),
   );
