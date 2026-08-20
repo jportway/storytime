@@ -80,11 +80,17 @@ export const config = {
      */
     storyteller: 'claude-opus-5',
     /**
-     * Bookkeeping and coaching. Haiku is fast and cheap, and both jobs are
-     * extraction rather than judgement. Note: `effort` is rejected on Haiku
-     * 4.5, so never pass output_config.effort on these calls.
+     * Bookkeeping, coaching, and deciding where the story is heading. Haiku is
+     * fast and cheap, and these all run off the critical path while Cooper is
+     * reading. The director is the one that is genuinely judgement rather than
+     * extraction, and it is kept narrow for that reason — it answers four
+     * small questions, and `plan.ts` does the rest in code.
+     *
+     * Note: `effort` is rejected on Haiku 4.5, so never pass
+     * output_config.effort on any of these calls.
      */
     archivist: 'claude-haiku-4-5',
+    director: 'claude-haiku-4-5',
     owl: 'claude-haiku-4-5',
   },
 

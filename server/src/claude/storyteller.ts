@@ -1,7 +1,8 @@
 import type Anthropic from '@anthropic-ai/sdk';
-import type { Panel, StoryBible } from '@storytime/shared';
+import type { Panel, StoryBible, StoryPlan } from '@storytime/shared';
 import { config } from '../config.js';
 import { serializeBible, serializeRecentBeats } from '../bible.js';
+import { serializePlanForReground, serializePlanNote } from '../plan.js';
 import {
   anthropic,
   assertWithinBudget,
@@ -24,6 +25,15 @@ export interface BeatResult {
   text: string;
   /** True when the model declined. The UI must handle this in character. */
   redirected: boolean;
+  /** The beat resolved the story rather than forking. */
+  landing: boolean;
+  /**
+   * Token usage for this beat. Only the replay harness reads it, and the
+   * cache figures are the reason it exists: if a change ever breaks the
+   * append-only prefix, cacheRead collapses to zero and every beat of every
+   * story silently starts costing full price.
+   */
+  usage: { input: number; output: number; cacheRead: number };
 }
 
 export interface StreamCallbacks {
@@ -78,13 +88,26 @@ export class Storyteller {
     this.bible = bible;
   }
 
-  /** Append Cooper's direction. Already spelling-normalised by the caller. */
-  addDirection(direction: string): void {
+  /**
+   * Append Cooper's direction. Already spelling-normalised by the caller.
+   *
+   * The director's stage note rides along in the same message rather than
+   * arriving as one of its own, and it goes at the *tail*. That matters more
+   * than it looks: this conversation is append-only precisely so the prompt
+   * cache can reuse the whole prefix every turn, and anything that edits an
+   * earlier message throws that away on every beat of every story.
+   *
+   * Most turns the note is empty — when she is driving, the storyteller sees
+   * exactly what it saw before any of this existed.
+   */
+  addDirection(direction: string, plan?: StoryPlan | null): void {
+    const parts = [`Cooper says what happens next:\n\n"${direction}"`];
+    const note = serializePlanNote(plan);
+    if (note) parts.push('', '---', '', note);
+
     this.messages.push({
       role: 'user',
-      content: [
-        { type: 'text', text: `Cooper says what happens next:\n\n"${direction}"` },
-      ],
+      content: [{ type: 'text', text: parts.join('\n') }],
     });
   }
 
@@ -136,7 +159,15 @@ export class Storyteller {
     // rather than showing a ten-year-old an error. The caller turns this
     // into an owl line, not a dialog box.
     if (message.stop_reason === 'refusal') {
-      return { panels, fork: '', text, chapterTitle: null, redirected: true };
+      return {
+        panels,
+        fork: '',
+        text,
+        chapterTitle: null,
+        redirected: true,
+        landing: false,
+        usage: usageOf(message.usage),
+      };
     }
 
     this.messages.push({ role: 'assistant', content: text });
@@ -151,6 +182,8 @@ export class Storyteller {
       text,
       chapterTitle: parser.chapterTitle,
       redirected: false,
+      landing: tail.landing,
+      usage: usageOf(message.usage),
     };
   }
 
@@ -173,7 +206,10 @@ export class Storyteller {
         serializeBible(this.bible),
         '',
         serializeRecentBeats(this.bible),
-      ].join('\n'),
+        serializePlanForReground(this.bible.plan),
+      ]
+        .filter(Boolean)
+        .join('\n'),
     } as StorytellerMessage);
   }
 
@@ -197,4 +233,16 @@ export class Storyteller {
     }
     return messages;
   }
+}
+
+function usageOf(usage: {
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_read_input_tokens?: number | null;
+}): { input: number; output: number; cacheRead: number } {
+  return {
+    input: usage.input_tokens ?? 0,
+    output: usage.output_tokens ?? 0,
+    cacheRead: usage.cache_read_input_tokens ?? 0,
+  };
 }

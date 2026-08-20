@@ -43,10 +43,34 @@ export async function getStory(
   return json(await fetch(`/api/stories/${storyId}`));
 }
 
-export async function listStories(): Promise<
-  { storyId: string; title: string; beats: number; updatedAt: string }[]
-> {
+export interface StorySummary {
+  storyId: string;
+  title: string;
+  beats: number;
+  updatedAt: string;
+  finished: boolean;
+}
+
+export async function listStories(): Promise<StorySummary[]> {
   return json(await fetch('/api/stories'));
+}
+
+/** She chose "The End". Names the book and closes it. */
+export async function finishStory(
+  storyId: string,
+): Promise<{ bible: StoryBible }> {
+  return json(
+    await fetch(`/api/stories/${storyId}/finish`, { method: 'POST' }),
+  );
+}
+
+/** She chose to keep going. A fresh arc is dealt behind the scenes. */
+export async function continueStory(
+  storyId: string,
+): Promise<{ bible: StoryBible }> {
+  return json(
+    await fetch(`/api/stories/${storyId}/continue`, { method: 'POST' }),
+  );
 }
 
 export async function getProfile(): Promise<Profile> {

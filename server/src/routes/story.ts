@@ -40,6 +40,40 @@ storyRouter.get('/stories/:storyId/credit', wrap(async (req, res) => {
 }));
 
 /**
+ * She chose "The End".
+ *
+ * The book gets its name here rather than when the story started, because
+ * this is the first moment there is anything to name. Until now every story
+ * has been called whatever the template was called.
+ */
+storyRouter.post('/stories/:storyId/finish', wrap(async (req, res) => {
+  const session = await getSession(req.params.storyId!);
+  if (!session) {
+    res.status(404).json({ error: 'No such story' });
+    return;
+  }
+  res.json({ bible: await session.finish() });
+}));
+
+/**
+ * She chose to keep going after the story landed.
+ *
+ * A fresh arc is dealt and the story carries straight on. She is told
+ * nothing: from where she sits she simply answered the question and the
+ * story continued, which is the point.
+ */
+storyRouter.post('/stories/:storyId/continue', wrap(async (req, res) => {
+  const session = await getSession(req.params.storyId!);
+  if (!session) {
+    res.status(404).json({ error: 'No such story' });
+    return;
+  }
+  session.continuePastLanding();
+  await session.save();
+  res.json({ bible: session.bible });
+}));
+
+/**
  * Write the next beat, streaming panels as they're written.
  *
  * Server-sent events rather than a single response, so panels pop in one at
@@ -95,8 +129,12 @@ storyRouter.post('/stories/:storyId/beat', wrap(async (req, res) => {
       raw,
       corrected,
       chapterTitle: result.chapterTitle,
+      landing: result.landing,
     });
 
+    // The closing line is only known to be a landing once the stream ends, so
+    // unlike `chapter` this cannot be sent ahead of the panels.
+    if (result.landing) send({ type: 'landing', text: result.fork });
     send({ type: 'beat-complete', beat });
     send({ type: 'bible-updated', bible: session.bible, whatsNew });
 
