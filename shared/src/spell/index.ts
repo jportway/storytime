@@ -7,6 +7,21 @@ export * from './misspellings.js';
 export * from './reversals.js';
 export * from './phonetic.js';
 
+/**
+ * Is the only difference between what she wrote and the suggestion
+ * cosmetic — capitalisation, an apostrophe, other punctuation?
+ *
+ * These are never allowed to stand between her and sending a turn. A
+ * missing apostrophe in "dont" or a lowercase "i" is not what this project
+ * is for, and stopping her over one is exactly the pedantic-red-pen
+ * experience it exists to avoid. The owl may still mention them in passing
+ * while she writes; they just never block.
+ */
+export function isCosmeticFix(original: string, suggestion: string): boolean {
+  const bare = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return bare(original) === bare(suggestion);
+}
+
 export interface SpellCheckerOptions {
   /** Words the checker treats as correct. */
   words: Iterable<string>;
@@ -103,6 +118,24 @@ export class SpellChecker {
     }
 
     return null;
+  }
+
+  /**
+   * A further guess for a word, excluding suggestions already tried —
+   * used when the owl's first guess is wrong and it has another go.
+   *
+   * Reversals and curated misspellings only ever have one right answer
+   * (there's no second way to un-reverse "deb"), so only the phonetic
+   * layer has further candidates to offer. Returns null once those are
+   * exhausted too, meaning: no more automatic guesses, she should fix it
+   * herself.
+   */
+  nextCandidate(word: string, excluding: Iterable<string>): string | null {
+    const tried = new Set([...excluding].map((s) => s.toLowerCase()));
+    const bucket = this.phonetic.get(phoneticKey(word)) ?? [];
+    const ranked = rankCandidates(word, bucket, 5);
+    const next = ranked.find((c) => !tried.has(c.word.toLowerCase()));
+    return next ? matchCase(word, next.word) : null;
   }
 
   /** Check a whole draft, returning findings with text offsets for underlining. */

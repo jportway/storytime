@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { coach } from '../claude/owl.js';
+import { checkBeforeSend } from '../claude/sendCheck.js';
 import { loadProfile } from '../store.js';
 
 export const owlRouter = Router();
@@ -35,4 +36,25 @@ owlRouter.post('/owl/coach', async (req, res) => {
 
 owlRouter.get('/owl/profile', async (_req, res) => {
   res.json(await loadProfile());
+});
+
+/**
+ * The one-time check right before a turn actually sends — after the local
+ * checker's instant, high-confidence layers are already clear. Catches what
+ * the small local dictionary can't: badly garbled words, and real words it
+ * just doesn't happen to contain (so it would otherwise false-flag them).
+ */
+owlRouter.post('/owl/send-check', async (req, res) => {
+  const { draft, storyNames } = req.body ?? {};
+
+  if (typeof draft !== 'string') {
+    res.status(400).json({ error: 'draft is required' });
+    return;
+  }
+
+  const issues = await checkBeforeSend(
+    draft,
+    Array.isArray(storyNames) ? storyNames : [],
+  );
+  res.json({ issues });
 });

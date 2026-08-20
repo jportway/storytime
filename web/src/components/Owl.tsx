@@ -1,5 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import type { OwlHelp, OwlResponse } from '@storytime/shared';
+import type { HelpKind, OwlHelp, OwlResponse } from '@storytime/shared';
+
+/**
+ * A word flagged during the pre-send spelling check — a guess she can
+ * confirm or reject, not a blocking form of words to fix.
+ */
+export interface SendGate {
+  word: string;
+  suggestion: string;
+  kind: HelpKind;
+  /** Whether a further automatic guess exists if she says this one is wrong. */
+  retryable: boolean;
+  /** No more automatic guesses left for this word — she should fix it herself. */
+  exhausted: boolean;
+}
 
 interface OwlProps {
   response: OwlResponse | null;
@@ -8,6 +22,14 @@ interface OwlProps {
   onAccept: (help: OwlHelp) => void;
   say: (text: string) => Promise<void>;
   spellOut: (word: string, onLetter?: (i: number) => void) => Promise<void>;
+  /** Set while she's trying to send and a word needs checking first. */
+  gate: SendGate | null;
+  onGateYes: () => void;
+  onGateNo: () => void;
+  /** Acknowledge "have a go yourself" and let her keep editing. */
+  onGateAcknowledge: () => void;
+  /** Waiting on the one-time LLM check before a turn actually sends. */
+  checkingSend: boolean;
 }
 
 /**
@@ -25,15 +47,22 @@ export function Owl({
   onAccept,
   say,
   spellOut,
+  gate,
+  onGateYes,
+  onGateNo,
+  onGateAcknowledge,
+  checkingSend,
 }: OwlProps) {
   const [activeHelp, setActiveHelp] = useState<OwlHelp | null>(null);
   const [litLetter, setLitLetter] = useState(-1);
   const spokenFor = useRef<OwlResponse | null>(null);
+  const spokenGateFor = useRef('');
 
   // Speak each new response once: praise first, then at most one or two
-  // helps, then the nudge.
+  // helps, then the nudge. Suppressed while a gate question is active —
+  // that takes the mic.
   useEffect(() => {
-    if (!response || spokenFor.current === response) return;
+    if (gate || !response || spokenFor.current === response) return;
     spokenFor.current = response;
 
     let cancelled = false;
@@ -56,14 +85,38 @@ export function Owl({
     return () => {
       cancelled = true;
     };
-  }, [response, say, spellOut]);
+  }, [gate, response, say, spellOut]);
+
+  // The board card renders from `activeHelp`, which outlives the response
+  // that produced it — so when the response goes away (she sent the turn,
+  // or dismissed it) the card has to go with it, or it sits there offering
+  // to fix a word that is no longer anywhere on screen.
+  useEffect(() => {
+    if (!response) setActiveHelp(null);
+  }, [response]);
+
+  // Speak the gate question once per distinct guess — a fresh guess (or
+  // "have a go yourself") speaks again, repeated renders of the same one
+  // don't.
+  useEffect(() => {
+    if (!gate) return;
+    const key = `${gate.word}:${gate.suggestion}:${gate.exhausted}`;
+    if (spokenGateFor.current === key) return;
+    spokenGateFor.current = key;
+
+    void say(
+      gate.exhausted
+        ? "Can't guess that one. Have a go yourself."
+        : `Hang on — is that supposed to say "${gate.suggestion}"?`,
+    );
+  }, [gate, say]);
 
   const board = activeHelp?.board;
 
   return (
     <aside className="owl-area">
       <button
-        className={`owl ${thinking ? 'owl-thinking' : ''}`}
+        className={`owl ${thinking || checkingSend ? 'owl-thinking' : ''}`}
         onClick={onAskForHelp}
         title="Ask the owl for help"
         aria-label="Ask the owl for help"
@@ -72,48 +125,85 @@ export function Owl({
       </button>
 
       <div className="owl-board" aria-live="polite">
-        {response?.praise && !activeHelp && (
-          <p className="owl-praise">{response.praise}</p>
-        )}
+        {checkingSend && !gate && <p className="owl-gate-message">Let me look...</p>}
 
-        {board && (
-          <div className="board-card">
+        {gate ? (
+          <div className="board-card gate-card">
             <div className="board-word">
-              {[...board.word].map((letter, i) => (
-                <span
-                  key={i}
-                  className={[
-                    'board-letter',
-                    board.highlight.includes(i) ? 'tricky' : '',
-                    litLetter === i ? 'lit' : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                >
+              {[...gate.word].map((letter, i) => (
+                <span key={i} className="board-letter">
                   {letter}
                 </span>
               ))}
             </div>
 
-            {board.mnemonic === 'bed-hands' && <BedHands />}
+            {gate.kind === 'reversal' && <BedHands />}
 
-            <button
-              className="board-accept"
-              onClick={() => {
-                onAccept(activeHelp!);
-                setActiveHelp(null);
-              }}
-            >
-              Fix it for me
-            </button>
-            <button className="board-dismiss" onClick={() => setActiveHelp(null)}>
-              I'll do it
-            </button>
+            {gate.exhausted ? (
+              <>
+                <p className="owl-gate-message">Have a go yourself, then send it again.</p>
+                <button className="board-dismiss" onClick={onGateAcknowledge}>
+                  Okay
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="owl-gate-message">Is that supposed to say "{gate.suggestion}"?</p>
+                <button className="board-accept" onClick={onGateYes}>
+                  Yes, that's it
+                </button>
+                <button className="board-dismiss" onClick={onGateNo}>
+                  No
+                </button>
+              </>
+            )}
           </div>
-        )}
+        ) : (
+          <>
+            {response?.praise && !activeHelp && (
+              <p className="owl-praise">{response.praise}</p>
+            )}
 
-        {response?.nudge && !activeHelp && (
-          <p className="owl-nudge">{response.nudge}</p>
+            {board && (
+              <div className="board-card">
+                <div className="board-word">
+                  {[...board.word].map((letter, i) => (
+                    <span
+                      key={i}
+                      className={[
+                        'board-letter',
+                        board.highlight.includes(i) ? 'tricky' : '',
+                        litLetter === i ? 'lit' : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                    >
+                      {letter}
+                    </span>
+                  ))}
+                </div>
+
+                {board.mnemonic === 'bed-hands' && <BedHands />}
+
+                <button
+                  className="board-accept"
+                  onClick={() => {
+                    onAccept(activeHelp!);
+                    setActiveHelp(null);
+                  }}
+                >
+                  Fix it for me
+                </button>
+                <button className="board-dismiss" onClick={() => setActiveHelp(null)}>
+                  I'll do it
+                </button>
+              </div>
+            )}
+
+            {response?.nudge && !activeHelp && (
+              <p className="owl-nudge">{response.nudge}</p>
+            )}
+          </>
         )}
       </div>
     </aside>

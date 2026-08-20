@@ -19,8 +19,16 @@ const owlSchema = z.object({
   helps: z
     .array(
       z.object({
-        original: z.string(),
-        fixed: z.string(),
+        original: z
+          .string()
+          .describe(
+            'The exact single word as she typed it, copied verbatim from her draft — never the surrounding sentence or phrase. This is used to find-and-replace in her actual text, so it must match a real substring of her draft exactly, letter for letter.',
+          ),
+        fixed: z
+          .string()
+          .describe(
+            'The corrected single word — just the word, not the sentence around it.',
+          ),
         kind: z.enum([
           'reversal',
           'spelling',
