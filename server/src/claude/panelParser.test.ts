@@ -89,3 +89,50 @@ describe('PanelParser streaming', () => {
     expect(parser.push('Second.\n[FORK] Done.\n')).toHaveLength(1);
   });
 });
+
+describe('chapter markers', () => {
+  it('reads the chapter a beat opens', () => {
+    const { chapterTitle, panels } = parseBeatText(
+      '[CHAPTER] The Big City\n[PANEL]\nThey arrive.\n[FORK] The gate is open.\n',
+    );
+    expect(chapterTitle).toBe('The Big City');
+    expect(panels).toHaveLength(1);
+  });
+
+  it('leaves chapterTitle null when a beat opens no chapter', () => {
+    const { chapterTitle } = parseBeatText('[PANEL]\nThey walk on.\n[FORK] It rains.\n');
+    expect(chapterTitle).toBeNull();
+  });
+
+  it('tolerates a colon after the marker', () => {
+    expect(
+      parseBeatText('[CHAPTER]: Into the Dark\n[PANEL]\nOn they go.\n').chapterTitle,
+    ).toBe('Into the Dark');
+  });
+
+  it('ignores a nameless chapter marker', () => {
+    // A chapter break with no title is worse than no break at all.
+    const { chapterTitle, panels } = parseBeatText('[CHAPTER]\n[PANEL]\nOn they go.\n');
+    expect(chapterTitle).toBeNull();
+    expect(panels).toHaveLength(1);
+  });
+
+  it('keeps only the first chapter of a beat', () => {
+    // One beat cannot open two chapters; the second marker is chatter.
+    expect(
+      parseBeatText(
+        '[CHAPTER] First\n[PANEL]\nA.\n[CHAPTER] Second\n[PANEL]\nB.\n',
+      ).chapterTitle,
+    ).toBe('First');
+  });
+
+  it('announces the chapter before any panel completes', () => {
+    // The header should update as the beat starts, not once it finishes.
+    const seen: string[] = [];
+    const parser = new PanelParser();
+    parser.onChapter = (title) => seen.push(title);
+    const panels = parser.push('[CHAPTER] The Big City\n[PANEL]\nThey arrive.\n');
+    expect(seen).toEqual(['The Big City']);
+    expect(panels).toHaveLength(0);
+  });
+});

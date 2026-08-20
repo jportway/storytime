@@ -11,6 +11,7 @@ import type { Panel } from '@storytime/shared';
  * Feed it chunks; it emits each panel the moment the *next* marker proves the
  * panel is finished.
  *
+ *   [CHAPTER] The Big City
  *   [PANEL]
  *   Narration line.
  *   TED: "Dialogue."
@@ -22,6 +23,20 @@ export class PanelParser {
   private currentLines: string[] = [];
   private started = false;
   private forkText: string | null = null;
+  private chapter: string | null = null;
+  private chapterEmitted = false;
+
+  /**
+   * Called the moment a `[CHAPTER]` marker is parsed, so the header can
+   * update before the first panel of the beat lands rather than after the
+   * whole beat finishes.
+   */
+  onChapter?: (title: string) => void;
+
+  /** The chapter this beat opens, if it opens one. */
+  get chapterTitle(): string | null {
+    return this.chapter;
+  }
 
   /** Feed a chunk. Returns any panels completed by this chunk. */
   push(chunk: string): Panel[] {
@@ -58,6 +73,18 @@ export class PanelParser {
 
   private consumeLine(rawLine: string): Panel | null {
     const line = rawLine.trim();
+
+    if (/^\[CHAPTER\]/i.test(line)) {
+      const title = line.replace(/^\[CHAPTER\]/i, '').replace(/^[:\-\s]+/, '').trim();
+      // An empty or repeated marker is ignored rather than opening a
+      // nameless chapter — a chapter break with no title is worse than none.
+      if (title && !this.chapterEmitted) {
+        this.chapter = title;
+        this.chapterEmitted = true;
+        this.onChapter?.(title);
+      }
+      return null;
+    }
 
     if (/^\[PANEL\]/i.test(line)) {
       const finished = this.flushCurrent();
@@ -140,9 +167,14 @@ function toTitleCase(s: string): string {
 export function parseBeatText(text: string): {
   panels: Panel[];
   fork: string | null;
+  chapterTitle: string | null;
 } {
   const parser = new PanelParser();
   const streamed = parser.push(text.endsWith('\n') ? text : text + '\n');
   const { panels, fork } = parser.end();
-  return { panels: [...streamed, ...panels], fork };
+  return {
+    panels: [...streamed, ...panels],
+    fork,
+    chapterTitle: parser.chapterTitle,
+  };
 }

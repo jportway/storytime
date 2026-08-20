@@ -85,6 +85,7 @@ async function main(): Promise<void> {
     }
 
     console.log(`\n--- Beat ${i + 1} (${Date.now() - started}ms) ---`);
+    if (result.chapterTitle) console.log(`   ## ${result.chapterTitle}`);
     for (const panel of result.panels) console.log(panelToText(panel), '\n');
     console.log(`   >> ${result.fork}`);
 
@@ -100,6 +101,7 @@ async function main(): Promise<void> {
       beatText: result.text,
       raw,
       corrected: raw ? session.normalise(raw) : null,
+      chapterTitle: result.chapterTitle,
     });
     if (whatsNew.length) console.log(`   [bible] ${whatsNew.join(' | ')}`);
   }

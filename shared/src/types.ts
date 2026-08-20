@@ -160,6 +160,15 @@ export interface Beat {
   /** The fork this beat ended on. */
   fork: string;
   /**
+   * Set when this beat *opens* a new chapter, to the chapter's title.
+   *
+   * Chapters aren't a separate structure: a beat either starts one or it
+   * doesn't, so "the current chapter" is simply the most recent title set,
+   * and the whole thing survives save/resume without any extra state. The
+   * storyteller decides when the story has earned a new one.
+   */
+  chapterTitle?: string | null;
+  /**
    * What Cooper typed to cause this beat, spelling-corrected. Null for the
    * opening beat, which nobody directed.
    */
@@ -301,6 +310,8 @@ export interface Profile {
 export type StoryStreamEvent =
   | { type: 'panel'; panel: Panel }
   | { type: 'fork'; text: string }
+  /** This beat opens a new chapter. Sent before any panel of that beat. */
+  | { type: 'chapter'; title: string }
   | { type: 'beat-complete'; beat: Beat }
   | { type: 'bible-updated'; bible: StoryBible; whatsNew: string[] }
   /**

@@ -71,6 +71,9 @@ storyRouter.post('/stories/:storyId/beat', wrap(async (req, res) => {
     const result = await session.getStoryteller().streamBeat({
       onPanel: (panel) => send({ type: 'panel', panel }),
       onFork: (fork) => send({ type: 'fork', text: fork }),
+      // Sent ahead of the panels so the header renames itself as the new
+      // chapter starts, rather than once the whole beat has landed.
+      onChapter: (title) => send({ type: 'chapter', title }),
     });
 
     if (result.redirected) {
@@ -91,6 +94,7 @@ storyRouter.post('/stories/:storyId/beat', wrap(async (req, res) => {
       beatText: result.text,
       raw,
       corrected,
+      chapterTitle: result.chapterTitle,
     });
 
     send({ type: 'beat-complete', beat });
