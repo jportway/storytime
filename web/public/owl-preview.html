@@ -1,0 +1,28 @@
+<!doctype html><meta charset=utf-8><title>Frank</title>
+<style>
+body{background:#f7f2e8;font:14px Lexend,system-ui;color:#241d14;margin:0;padding:24px;
+     display:flex;flex-wrap:wrap;gap:28px}
+figure{margin:0;text-align:center}
+.o{width:200px;height:200px;background-repeat:no-repeat}
+figcaption{margin-top:6px;letter-spacing:.1em;text-transform:uppercase;font-size:10px;opacity:.6}
+</style>
+<div id=out></div>
+<script>
+fetch('/owl/frames.json').then(r=>r.json()).then(m=>{
+  const wrap=document.getElementById('out');
+  wrap.style.display='flex';wrap.style.flexWrap='wrap';wrap.style.gap='28px';
+  for(const [pose,n] of Object.entries(m.poses)){
+    const fig=document.createElement('figure');
+    const d=document.createElement('div');d.className='o';
+    d.style.backgroundImage=`url(/owl/${pose}.webp)`;
+    d.style.backgroundSize=`${n*100}% 100%`;
+    let order=[...Array(n).keys()],i=0;
+    const shuffle=a=>{for(let k=a.length-1;k>0;k--){const j=Math.random()*(k+1)|0;[a[k],a[j]]=[a[j],a[k]]}};
+    shuffle(order);
+    setInterval(()=>{i=(i+1)%n; if(!i)shuffle(order);
+      d.style.backgroundPosition=`${n>1?order[i]/(n-1)*100:0}% 0`},420);
+    const c=document.createElement('figcaption');c.textContent=`${pose} · ${n}`;
+    fig.append(d,c);wrap.append(fig);
+  }
+});
+</script>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<sc-if value="{{ calm }}" hint-placeholder-val="{{ true }}">
+<svg viewBox="0 0 120 134" width="100%" height="100%" style="display:block;overflow:visible" aria-hidden="true">
+<path d="M57,4 C82,2 104,21 107,49 C110,73 105,95 95,108 C88,118 74,124 58,122 C35,120 14,103 11,75 C8,48 16,25 33,12 C40,7 48,5 57,4 Z" fill="currentColor"></path>
+<path d="M91,40 C101,58 100,86 87,104 C95,84 95,58 87,42 Z" fill="{{ disc }}"></path>
+<path d="M26,44 C26,21 43,15 60,32 C77,15 94,22 93,45 C92,71 77,89 60,89 C42,89 26,70 26,44 Z" fill="{{ disc }}"></path>
+<path d="M33,48 C39,37 50,34 57,42 C49,39 41,42 33,48 Z" fill="currentColor"></path>
+<path d="M64,41 C71,33 81,36 86,47 C79,41 71,39 64,41 Z" fill="currentColor"></path>
+<path d="M60,49 C63,56 65,62 60,73 C55,62 57,56 60,49 Z" fill="currentColor"></path>
+<g fill="{{ disc }}">
+<path d="M41,90 C43,94 43,100 40,104 C38,99 38,94 41,90 Z"></path>
+<path d="M50,94 C52,98 52,104 49,108 C47,103 47,98 50,94 Z"></path>
+<path d="M60,95 C62,99 62,105 59,109 C57,104 57,99 60,95 Z"></path>
+<path d="M70,94 C72,98 71,104 68,108 C67,103 67,98 70,94 Z"></path>
+<path d="M79,90 C81,94 80,100 77,104 C76,99 76,94 79,90 Z"></path>
+</g>
+<sc-if value="{{ branch }}" hint-placeholder-val="{{ false }}">
+<path d="M-6,132 C28,120 62,126 96,116 C110,112 118,109 124,105 C118,113 108,118 96,122 C62,132 28,127 -4,136 Z" fill="currentColor"></path>
+</sc-if>
+</svg>
+</sc-if>
+<sc-if value="{{ awake }}" hint-placeholder-val="{{ false }}">
+<svg viewBox="0 0 120 134" width="100%" height="100%" style="display:block;overflow:visible" aria-hidden="true">
+<path d="M57,4 C82,2 104,21 107,49 C110,73 105,95 95,108 C88,118 74,124 58,122 C35,120 14,103 11,75 C8,48 16,25 33,12 C40,7 48,5 57,4 Z" fill="currentColor"></path>
+<path d="M91,40 C101,58 100,86 87,104 C95,84 95,58 87,42 Z" fill="{{ disc }}"></path>
+<path d="M26,44 C26,21 43,15 60,32 C77,15 94,22 93,45 C92,71 77,89 60,89 C42,89 26,70 26,44 Z" fill="{{ disc }}"></path>
+<path d="M44,35 C51,35 55,41 54,47 C53,53 48,56 43,54 C38,52 36,45 39,39 C40,36 42,35 44,35 Z" fill="currentColor"></path>
+<path d="M76,35 C82,35 85,41 84,47 C83,53 78,56 73,54 C68,52 66,45 69,39 C71,36 73,35 76,35 Z" fill="currentColor"></path>
+<path d="M60,49 C63,56 65,62 60,73 C55,62 57,56 60,49 Z" fill="currentColor"></path>
+<g fill="{{ disc }}">
+<path d="M41,90 C43,94 43,100 40,104 C38,99 38,94 41,90 Z"></path>
+<path d="M50,94 C52,98 52,104 49,108 C47,103 47,98 50,94 Z"></path>
+<path d="M60,95 C62,99 62,105 59,109 C57,104 57,99 60,95 Z"></path>
+<path d="M70,94 C72,98 71,104 68,108 C67,103 67,98 70,94 Z"></path>
+<path d="M79,90 C81,94 80,100 77,104 C76,99 76,94 79,90 Z"></path>
+</g>
+<sc-if value="{{ branch }}" hint-placeholder-val="{{ false }}">
+<path d="M-6,132 C28,120 62,126 96,116 C110,112 118,109 124,105 C118,113 108,118 96,122 C62,132 28,127 -4,136 Z" fill="currentColor"></path>
+</sc-if>
+</svg>
+</sc-if>
+<sc-if value="{{ happy }}" hint-placeholder-val="{{ false }}">
+<svg viewBox="0 0 120 134" width="100%" height="100%" style="display:block;overflow:visible" aria-hidden="true">
+<path d="M57,4 C82,2 104,21 107,49 C110,73 105,95 95,108 C88,118 74,124 58,122 C35,120 14,103 11,75 C8,48 16,25 33,12 C40,7 48,5 57,4 Z" fill="currentColor"></path>
+<path d="M91,40 C101,58 100,86 87,104 C95,84 95,58 87,42 Z" fill="{{ disc }}"></path>
+<path d="M26,44 C26,21 43,15 60,32 C77,15 94,22 93,45 C92,71 77,89 60,89 C42,89 26,70 26,44 Z" fill="{{ disc }}"></path>
+<path d="M33,47 C38,35 51,33 57,44 C49,38 40,40 33,47 Z" fill="currentColor"></path>
+<path d="M63,44 C69,33 82,35 87,47 C80,40 71,38 63,44 Z" fill="currentColor"></path>
+<path d="M60,49 C63,56 65,62 60,73 C55,62 57,56 60,49 Z" fill="currentColor"></path>
+<g fill="{{ disc }}">
+<path d="M41,90 C43,94 43,100 40,104 C38,99 38,94 41,90 Z"></path>
+<path d="M50,94 C52,98 52,104 49,108 C47,103 47,98 50,94 Z"></path>
+<path d="M60,95 C62,99 62,105 59,109 C57,104 57,99 60,95 Z"></path>
+<path d="M70,94 C72,98 71,104 68,108 C67,103 67,98 70,94 Z"></path>
+<path d="M79,90 C81,94 80,100 77,104 C76,99 76,94 79,90 Z"></path>
+</g>
+<sc-if value="{{ branch }}" hint-placeholder-val="{{ false }}">
+<path d="M-6,132 C28,120 62,126 96,116 C110,112 118,109 124,105 C118,113 108,118 96,122 C62,132 28,127 -4,136 Z" fill="currentColor"></path>
+</sc-if>
+</svg>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:170,&quot;height&quot;:190},&quot;mood&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;calm&quot;,&quot;awake&quot;,&quot;happy&quot;],&quot;default&quot;:&quot;calm&quot;,&quot;tsType&quot;:&quot;'calm'|'awake'|'happy'&quot;},&quot;branch&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:false,&quot;tsType&quot;:&quot;boolean&quot;},&quot;disc&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;options&quot;:[&quot;#faf6ef&quot;,&quot;#f7f2e8&quot;,&quot;#1d1a15&quot;],&quot;default&quot;:&quot;#faf6ef&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const m = this.props.mood ?? 'calm';
+    return {
+      calm: m === 'calm',
+      awake: m === 'awake',
+      happy: m === 'happy',
+      branch: this.props.branch === true || this.props.branch === 'true',
+      disc: this.props.disc ?? '#faf6ef',
+    };
+  }
+}
+</script>
+</body>
+</html>

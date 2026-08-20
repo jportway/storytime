@@ -7,11 +7,18 @@ interface WritingBoxProps {
   onSend: () => void;
   findings: LocalFinding[];
   disabled: boolean;
-  fork: string;
+  /** True while the story is being written — the composer goes quiet. */
+  streaming: boolean;
+  expanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
 }
 
 /**
  * Where Cooper writes.
+ *
+ * Floats over the story rather than reserving a band of the page, and stays
+ * a single-line pill until she actually wants it — the reading area is the
+ * whole page until she needs to write in it.
  *
  * The findings are drawn as soft dotted underlines on a mirror layer behind
  * a transparent textarea. Deliberately not red, not squiggly, and never a
@@ -26,7 +33,9 @@ export function WritingBox({
   onSend,
   findings,
   disabled,
-  fork,
+  streaming,
+  expanded,
+  onExpandedChange,
 }: WritingBoxProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
@@ -61,11 +70,22 @@ export function WritingBox({
   }
   segments.push(value.slice(cursor));
 
-  return (
-    <div className="writing">
-      {fork && <p className="fork">{fork}</p>}
+  // Deliberately generic: the fork is the story's own question and it now
+  // sits at the end of the story text where she can still read it while she
+  // answers. Repeating it here only clipped it mid-sentence.
+  const placeholder = streaming ? 'The story is writing…' : 'What happens next?';
 
-      <div className="writing-field">
+  const classes = [
+    'composer-pill',
+    expanded ? 'composer-expanded' : '',
+    streaming ? 'composer-streaming' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return (
+    <div className={classes}>
+      <div className="composer-field">
         <div className="writing-mirror" ref={mirrorRef} aria-hidden="true">
           {segments}
           {'\n'}
@@ -75,6 +95,12 @@ export function WritingBox({
           className="writing-input"
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onFocus={() => onExpandedChange(true)}
+          onBlur={() => {
+            // Only collapse if she left nothing behind — collapsing on a
+            // half-written sentence would hide her own words.
+            if (!value.trim()) onExpandedChange(false);
+          }}
           onKeyDown={(e) => {
             // Enter sends; Shift+Enter makes a new line.
             if (e.key === 'Enter' && !e.shiftKey) {
@@ -82,23 +108,58 @@ export function WritingBox({
               if (!disabled && value.trim()) onSend();
             }
           }}
-          placeholder="What happens next?"
+          placeholder={placeholder}
           spellCheck={false}
           autoComplete="off"
-          disabled={disabled}
-          rows={3}
+          disabled={streaming}
+          rows={expanded ? 2 : 1}
+          aria-label="What happens next?"
         />
       </div>
 
-      <div className="writing-actions">
-        <button
-          className="send"
-          onClick={onSend}
+      {expanded && (
+        <div className="composer-hint-row">
+          <span className="composer-hint">
+            {findings.length > 0 ? 'The dotted words are just worth a look' : ''}
+          </span>
+          <SendButton
+            onSend={onSend}
+            disabled={disabled || !value.trim()}
+            streaming={streaming}
+          />
+        </div>
+      )}
+
+      {!expanded && (
+        <SendButton
+          onSend={onSend}
           disabled={disabled || !value.trim()}
-        >
-          {disabled ? 'Writing…' : 'Send it!'}
-        </button>
-      </div>
+          streaming={streaming}
+        />
+      )}
     </div>
+  );
+}
+
+function SendButton({
+  onSend,
+  disabled,
+  streaming,
+}: {
+  onSend: () => void;
+  disabled: boolean;
+  streaming: boolean;
+}) {
+  return (
+    <button
+      className="send"
+      onClick={onSend}
+      disabled={disabled}
+      // Pointer-down rather than click would fire before blur collapses the
+      // field; keeping it on click is fine because blur only collapses an
+      // empty draft, and an empty draft can't be sent anyway.
+    >
+      {streaming ? 'Writing…' : 'Send it!'}
+    </button>
   );
 }

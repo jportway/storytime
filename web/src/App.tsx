@@ -14,10 +14,15 @@ import type { Credit } from './api.js';
 import { buildChecker } from './spellchecker.js';
 import { useOwl } from './hooks/useOwl.js';
 import { useSpeech } from './hooks/useSpeech.js';
-import { BeatView, PanelView } from './components/Story.js';
+import {
+  BeatView,
+  NewFromHere,
+  PanelView,
+  YourIdea,
+  ordinal,
+} from './components/Story.js';
 import { Owl, type SendGate } from './components/Owl.js';
 import { WritingBox } from './components/WritingBox.js';
-import { WhoIsWho } from './components/WhoIsWho.js';
 
 export function App() {
   const [bible, setBible] = useState<StoryBible | null>(null);
@@ -32,10 +37,26 @@ export function App() {
 
   const [draft, setDraft] = useState('');
   const [whatsNew, setWhatsNew] = useState<string[]>([]);
-  const [showWho, setShowWho] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const bottomRef = useRef<HTMLDivElement>(null);
+  /** Collapsed pill vs the multi-line field. */
+  const [composerExpanded, setComposerExpanded] = useState(false);
+  /** The chapter currently being written, as soon as its marker arrives. */
+  const [liveChapter, setLiveChapter] = useState<string | null>(null);
+  /**
+   * What she typed to cause the beat currently streaming in, so her own
+   * words sit above it from the first moment rather than appearing only
+   * once the beat is finished and saved.
+   */
+  const [lastDirection, setLastDirection] = useState<string | null>(null);
+  const [showMoreBelow, setShowMoreBelow] = useState(false);
+
+  const paneRef = useRef<HTMLElement>(null);
+  const dividerRef = useRef<HTMLDivElement>(null);
+  /** End of the real story text, before the scroll spacer. */
+  const endRef = useRef<HTMLDivElement>(null);
+  /** The beat the one-shot scroll has already fired for. */
+  const scrolledForBeat = useRef<number | null>(null);
   const speech = useSpeech();
 
   const storyNames = useMemo(() => {
@@ -71,6 +92,8 @@ export function App() {
       setWriting(true);
       setLivePanels([]);
       setFork('');
+      setLiveChapter(null);
+      setLastDirection(direction);
       setError(null);
 
       try {
@@ -82,9 +105,16 @@ export function App() {
             case 'fork':
               setFork(event.text);
               break;
+            case 'chapter':
+              setLiveChapter(event.title);
+              break;
             case 'beat-complete':
               setBeats((prev) => [...prev, event.beat]);
               setLivePanels([]);
+              // The committed beat carries its own chapterTitle now; leaving
+              // this set would count the same chapter twice.
+              setLiveChapter(null);
+              setLastDirection(null);
               break;
             case 'bible-updated':
               setBible(event.bible);
@@ -123,6 +153,7 @@ export function App() {
       const direction = text ?? draft;
       if (!bible || !direction.trim()) return;
       setDraft('');
+      setComposerExpanded(false);
       setGate(null);
       gateDraftRef.current = null;
       rejectedGuesses.current = {};
@@ -287,9 +318,91 @@ export function App() {
     void api.getProfile().then(setProfile).catch(() => undefined);
   }, []);
 
+  // -----------------------------------------------------------------------
+  // The scroll rule
+  //
+  // Scroll exactly once per beat, to put the *top* of the new text just
+  // under the header — then stop, however many panels arrive afterwards.
+  //
+  // The old behaviour re-pinned to the bottom on every streamed panel, which
+  // meant the start of a beat was pushed off the top of the screen before
+  // she had read it. Text now grows downward into the empty space she is
+  // already looking at, and nothing she has not yet read ever moves.
+  // -----------------------------------------------------------------------
+
+  const beatBoundary = livePanels.length > 0 ? beats.length + 1 : beats.length;
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    if (beatBoundary === 0 || scrolledForBeat.current === beatBoundary) return;
+    // Wait for the divider to exist; the opening beat has none, and there is
+    // nothing above it to scroll away from anyway.
+    const pane = paneRef.current;
+    const divider = dividerRef.current;
+    if (!pane) return;
+    scrolledForBeat.current = beatBoundary;
+    if (!divider) return;
+
+    const reduced = window.matchMedia?.(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+
+    // scrollTop arithmetic rather than scrollIntoView: on a nested scroller
+    // scrollIntoView can also scroll ancestors, and "top of the pane" is
+    // exactly what we want rather than what block:'start' approximates once
+    // padding is involved.
+    const top =
+      divider.getBoundingClientRect().top -
+      pane.getBoundingClientRect().top +
+      pane.scrollTop;
+
+    pane.scrollTo({ top, behavior: reduced ? 'auto' : 'smooth' });
+  }, [beatBoundary]);
+
+  // "More below" appears only while there is genuinely more below.
+  useEffect(() => {
+    const pane = paneRef.current;
+    if (!pane) return;
+
+    let frame = 0;
+    const check = () => {
+      frame = 0;
+      const end = endRef.current;
+      if (!end) {
+        setShowMoreBelow(false);
+        return;
+      }
+      // Against the end of the text, not scrollHeight — the spacer below it
+      // is deliberately empty and must never claim there's more to read.
+      const paneBottom = pane.getBoundingClientRect().bottom;
+      setShowMoreBelow(end.getBoundingClientRect().top > paneBottom - 24);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(check);
+    };
+
+    check();
+    pane.addEventListener('scroll', onScroll, { passive: true });
+    const observer = new ResizeObserver(onScroll);
+    observer.observe(pane);
+    return () => {
+      pane.removeEventListener('scroll', onScroll);
+      observer.disconnect();
+      if (frame) cancelAnimationFrame(frame);
+    };
   }, [beats.length, livePanels.length, fork]);
+
+  /** One viewport down, not all the way to the end — she sets the pace. */
+  const pageDown = useCallback(() => {
+    const pane = paneRef.current;
+    if (!pane) return;
+    const reduced = window.matchMedia?.(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+    pane.scrollBy({
+      top: pane.clientHeight * 0.85,
+      behavior: reduced ? 'auto' : 'smooth',
+    });
+  }, []);
 
   /** Accept one of the owl's corrections. Never applied automatically. */
   const acceptHelp = useCallback((help: OwlHelp) => {
@@ -309,62 +422,111 @@ export function App() {
   if (!bible) {
     return (
       <div className="welcome">
+        <div className="welcome-owl" aria-hidden="true" />
         <h1>Storytime</h1>
-        <p>You're going to write a comic book.</p>
+        <p className="welcome-sub">You're going to write a comic book.</p>
         <button className="start" onClick={() => void start()}>
           Start a Grimwood story
         </button>
+        <p className="welcome-foot">
+          The owl will read along and help with the hard words.
+        </p>
       </div>
     );
   }
+
+  // The current chapter is simply the most recent title any beat has set,
+  // plus whichever one is mid-flight.
+  const chapterTitles = beats
+    .map((b) => b.chapterTitle)
+    .filter((t): t is string => Boolean(t));
+  if (liveChapter) chapterTitles.push(liveChapter);
+  const currentChapter = chapterTitles[chapterTitles.length - 1] ?? null;
+
+  /** Which chapter number a given beat's title opens. */
+  let seen = 0;
+  const chapterNumberFor = new Map<number, number>();
+  for (const beat of beats) {
+    if (beat.chapterTitle) chapterNumberFor.set(beat.n, ++seen);
+  }
+
+  const newestBeat = beats[beats.length - 1];
+  // Only once there is a divider to scroll to — the opening beat has nothing
+  // above it and should simply start at the top.
+  const needsSpacer = writing ? beats.length > 0 : (newestBeat?.n ?? 0) > 1;
 
   return (
     <div className="app">
       <header className="topbar">
         <h1>{bible.title}</h1>
-        <div className="topbar-actions">
-          {whatsNew.length > 0 && (
-            <span className="whats-new">{whatsNew[0]}</span>
-          )}
-          <button onClick={() => setShowWho(true)}>Who's who</button>
-        </div>
+        {currentChapter && (
+          <span className="topbar-chapter">
+            Chapter {ordinal(chapterTitles.length)} · {currentChapter}
+          </span>
+        )}
       </header>
 
-      <main className="story">
-        {beats.map((beat) => (
-          <BeatView key={beat.n} beat={beat} />
-        ))}
+      <main className="story" ref={paneRef}>
+        <div className="story-column">
+          {beats.map((beat) => (
+            <BeatView
+              key={beat.n}
+              beat={beat}
+              chapterNumber={chapterNumberFor.get(beat.n)}
+              isNewest={!writing && beat.n === newestBeat?.n}
+              dividerRef={beat.n === newestBeat?.n ? dividerRef : undefined}
+            />
+          ))}
 
-        {livePanels.length > 0 && (
-          <section className="beat">
-            {livePanels.map((panel, i) => (
-              <PanelView key={i} panel={panel} index={i} />
-            ))}
-          </section>
-        )}
+          {(writing || livePanels.length > 0) && (
+            <section className="beat">
+              {liveChapter && (
+                <ChapterBreakLive
+                  n={chapterTitles.length}
+                  title={liveChapter}
+                />
+              )}
+              {beats.length > 0 && <NewFromHere ref={dividerRef} />}
+              {lastDirection && <YourIdea text={lastDirection} />}
+              {livePanels.map((panel, i) => (
+                <PanelView key={i} panel={panel} index={i} />
+              ))}
+              {livePanels.length > 0 && <span className="stream-caret" />}
+            </section>
+          )}
 
-        {writing && livePanels.length === 0 && (
-          <p className="writing-indicator">The story is thinking…</p>
-        )}
+          {error && (
+            <p className="error">
+              {error} <button onClick={() => setError(null)}>OK</button>
+            </p>
+          )}
 
-        {error && (
-          <p className="error">
-            {error} <button onClick={() => setError(null)}>OK</button>
-          </p>
-        )}
+          {/* Marks the end of real content, so "More below" measures the
+              story rather than the spacer underneath it. */}
+          <div ref={endRef} />
 
-        <div ref={bottomRef} />
+          {/*
+            Without this the one scroll clamps: at the moment a beat starts
+            there is not yet enough text below the divider to pull it to the
+            top of the pane, so it would settle halfway up and stay there.
+            A viewport of empty paper below is what the design intends —
+            the beat grows down into it.
+          */}
+          {needsSpacer && <div className="story-spacer" aria-hidden="true" />}
+        </div>
       </main>
 
-      <footer className="composer">
-        <WritingBox
-          value={draft}
-          onChange={setDraft}
-          onSend={() => void attemptSend()}
-          findings={owl.findings}
-          disabled={writing || checkingSend}
-          fork={fork}
-        />
+      <div className="bottom-fade" aria-hidden="true" />
+
+      {showMoreBelow && (
+        <button className="more-below" onClick={pageDown}>
+          More below ↓
+        </button>
+      )}
+
+      {whatsNew.length > 0 && <span className="whats-new">{whatsNew[0]}</span>}
+
+      <div className="composer-row">
         <Owl
           response={owl.response}
           thinking={owl.thinking}
@@ -377,16 +539,29 @@ export function App() {
           onGateNo={gateNo}
           onGateAcknowledge={gateAcknowledge}
           checkingSend={checkingSend}
+          streaming={writing}
         />
-      </footer>
+        <WritingBox
+          value={draft}
+          onChange={setDraft}
+          onSend={() => void attemptSend()}
+          findings={owl.findings}
+          disabled={writing || checkingSend}
+          streaming={writing}
+          expanded={composerExpanded || Boolean(draft)}
+          onExpandedChange={setComposerExpanded}
+        />
+      </div>
+    </div>
+  );
+}
 
-      {showWho && (
-        <WhoIsWho
-          bible={bible}
-          credit={credit}
-          onClose={() => setShowWho(false)}
-        />
-      )}
+/** The chapter break for the beat currently streaming in. */
+function ChapterBreakLive({ n, title }: { n: number; title: string }) {
+  return (
+    <div className="chapter-break">
+      <span className="chapter-break-number">Chapter {ordinal(n)}</span>
+      <h2 className="chapter-break-title">{title}</h2>
     </div>
   );
 }

@@ -18,6 +18,8 @@ export type StorytellerMessage = Anthropic.MessageParam;
 export interface BeatResult {
   panels: Panel[];
   fork: string;
+  /** Set when this beat opens a new chapter. */
+  chapterTitle: string | null;
   /** Raw model text, kept so the archivist reads exactly what was written. */
   text: string;
   /** True when the model declined. The UI must handle this in character. */
@@ -27,6 +29,8 @@ export interface BeatResult {
 export interface StreamCallbacks {
   onPanel?: (panel: Panel) => void;
   onFork?: (fork: string) => void;
+  /** Fires as soon as the marker is parsed, before the first panel lands. */
+  onChapter?: (title: string) => void;
 }
 
 /**
@@ -89,6 +93,7 @@ export class Storyteller {
     this.maybeReground();
 
     const parser = new PanelParser();
+    if (cb.onChapter) parser.onChapter = cb.onChapter;
     const panels: Panel[] = [];
     let text = '';
 
@@ -131,7 +136,7 @@ export class Storyteller {
     // rather than showing a ten-year-old an error. The caller turns this
     // into an owl line, not a dialog box.
     if (message.stop_reason === 'refusal') {
-      return { panels, fork: '', text, redirected: true };
+      return { panels, fork: '', text, chapterTitle: null, redirected: true };
     }
 
     this.messages.push({ role: 'assistant', content: text });
@@ -140,7 +145,13 @@ export class Storyteller {
     const fork = tail.fork ?? '';
     if (fork) cb.onFork?.(fork);
 
-    return { panels, fork, text, redirected: false };
+    return {
+      panels,
+      fork,
+      text,
+      chapterTitle: parser.chapterTitle,
+      redirected: false,
+    };
   }
 
   /**

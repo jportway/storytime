@@ -19,3 +19,9 @@ server/.cache/
 
 # TypeScript incremental build output
 *.tsbuildinfo
+
+# The owl pipeline's venv and raw 2K generations. The registered sprite
+# sheets in web/public/owl/ are what ships and those ARE committed.
+tools/owl/.venv/
+tools/owl/frames/
+tools/owl/__pycache__/

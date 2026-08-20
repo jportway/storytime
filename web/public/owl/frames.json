@@ -1,0 +1,12 @@
+{
+  "size": 256,
+  "poses": {
+    "approve": 6,
+    "blink-half": 6,
+    "blink-shut": 6,
+    "idle": 6,
+    "talk-open": 6,
+    "talk-wide": 6,
+    "think-tilt": 4
+  }
+}

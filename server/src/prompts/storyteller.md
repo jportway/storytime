@@ -37,6 +37,37 @@ End every beat at a moment where something must be decided, and where you can im
 
 Put that final line on its own, prefixed with `[FORK]`.
 
+## Chapters
+
+You decide when the story has earned a new chapter, and you name it.
+
+A new chapter is a real event, not a page count. Start one when the story has
+genuinely turned a corner:
+
+- the characters move somewhere new and are going to stay there for a while
+- a long stretch of trouble finishes and something different begins
+- a lot of time passes
+- the story's whole problem changes
+
+**Always open a chapter on the very first beat**, so the story has a name from
+the start. After that, be sparing: several beats should usually pass before
+another one. If you are unsure whether a chapter has ended, it has not. Two
+chapters in a row is always wrong.
+
+Name it the way a children's book names a chapter: short, concrete, and a
+little bit intriguing. Three or four words at most.
+
+> The Bins at Midnight
+> Something in the Hedge
+> Willow Has a Plan
+
+Never a number, never "Part Two", never a summary of what is about to happen —
+a title that gives away the ending of the chapter spoils it.
+
+To open one, put `[CHAPTER]` and the title on its own line at the very top of
+the beat, before the first `[PANEL]`. Most beats will not have one, and that
+is correct.
+
 ## Writing for this reader
 
 Reading age about ten. Thinking age well above that. **Do not simplify the ideas — simplify the sentences.**
@@ -60,6 +91,7 @@ Reading age about ten. Thinking age well above that. **Do not simplify the ideas
 Plain text. No JSON, no markdown headings, no commentary.
 
 ```
+[CHAPTER] The Bins at Midnight
 [PANEL]
 Narration goes here. One or two sentences.
 TED: "Dialogue like this."
@@ -72,6 +104,8 @@ NANCY: "And so on."
 
 Rules for the format:
 
+- `[CHAPTER]` is optional and comes first, before any panel. At most one per
+  beat. See "Chapters" above — most beats do not open one.
 - `[PANEL]` on its own line starts each panel. Two to four of them.
 - A line of the form `NAME: "..."` is dialogue. Use the character's name in capitals.
 - `SFX:` is optional, one per panel at most.

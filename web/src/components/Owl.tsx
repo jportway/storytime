@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { HelpKind, OwlHelp, OwlResponse } from '@storytime/shared';
+import { OwlArt, useOwlPerformance, type OwlState } from './OwlArt.js';
 
 /**
  * A word flagged during the pre-send spelling check — a guess she can
@@ -30,15 +31,22 @@ interface OwlProps {
   onGateAcknowledge: () => void;
   /** Waiting on the one-time LLM check before a turn actually sends. */
   checkingSend: boolean;
+  /** True while the story is being written — the owl stays out of the way. */
+  streaming: boolean;
 }
 
 /**
  * The owl and its board.
  *
- * The owl speaks; the board beside it shows the word, with the tricky
- * letters lighting up in time with the voice. For b/d reversals it also
- * draws the hands mnemonic, because that reversal isn't a spelling problem
- * and shouldn't be treated like one.
+ * The owl speaks; a card above it shows the word, with the tricky letters
+ * lighting up in time with the voice. For b/d reversals it also draws the
+ * hands mnemonic, because that reversal isn't a spelling problem and
+ * shouldn't be treated like one.
+ *
+ * The card is an overlay, positioned over the story rather than in a column
+ * beside it. That is deliberate and load-bearing: the story must never
+ * reflow because the owl had something to say. She may be halfway through a
+ * sentence when it appears.
  */
 export function Owl({
   response,
@@ -52,6 +60,7 @@ export function Owl({
   onGateNo,
   onGateAcknowledge,
   checkingSend,
+  streaming,
 }: OwlProps) {
   const [activeHelp, setActiveHelp] = useState<OwlHelp | null>(null);
   const [litLetter, setLitLetter] = useState(-1);
@@ -112,119 +121,155 @@ export function Owl({
   }, [gate, say]);
 
   const board = activeHelp?.board;
+  const praise = response?.praise && !activeHelp && !gate ? response.praise : null;
+  const nudge = response?.nudge && !activeHelp && !gate ? response.nudge : null;
+
+  const speaking = Boolean(gate || board || praise || nudge || checkingSend);
+
+  // He is a drawing, not a tinted shape: every mood is a different set of
+  // brush strokes rather than a CSS filter over one of them.
+  const state: OwlState = praise
+    ? 'pleased'
+    : thinking || checkingSend
+      ? 'thinking'
+      : speaking
+        ? 'talking'
+        : 'resting';
+  const pose = useOwlPerformance(state);
+
+  const owlClasses = ['owl', speaking ? 'owl-big' : '', streaming ? 'owl-quiet' : '']
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <aside className="owl-area">
+    <>
       <button
-        className={`owl ${thinking || checkingSend ? 'owl-thinking' : ''}`}
+        className={owlClasses}
         onClick={onAskForHelp}
         title="Ask the owl for help"
         aria-label="Ask the owl for help"
       >
-        <OwlFace />
+        <OwlArt mood={pose} />
       </button>
 
-      <div className="owl-board" aria-live="polite">
-        {checkingSend && !gate && <p className="owl-gate-message">Let me look...</p>}
+      <div className="owl-overlay" aria-live="polite">
+        {checkingSend && !gate && (
+          <div className="owl-card">
+            <p className="owl-card-message">Let me look…</p>
+          </div>
+        )}
 
-        {gate ? (
-          <div className="board-card gate-card">
-            <div className="board-word">
-              {[...gate.word].map((letter, i) => (
-                <span key={i} className="board-letter">
-                  {letter}
-                </span>
-              ))}
-            </div>
+        {gate && (
+          <div className="owl-card owl-card-gate">
+            <BoardWord letters={[...gate.word]} />
 
             {gate.kind === 'reversal' && <BedHands />}
 
             {gate.exhausted ? (
               <>
-                <p className="owl-gate-message">Have a go yourself, then send it again.</p>
-                <button className="board-dismiss" onClick={onGateAcknowledge}>
-                  Okay
-                </button>
+                <p className="owl-card-message">
+                  Have a go yourself, then send it again.
+                </p>
+                <div className="owl-card-buttons">
+                  <button className="card-primary" onClick={onGateAcknowledge}>
+                    Okay
+                  </button>
+                </div>
               </>
             ) : (
               <>
-                <p className="owl-gate-message">Is that supposed to say "{gate.suggestion}"?</p>
-                <button className="board-accept" onClick={onGateYes}>
-                  Yes, that's it
-                </button>
-                <button className="board-dismiss" onClick={onGateNo}>
-                  No
-                </button>
+                <p className="owl-card-message">
+                  Is that supposed to say “{gate.suggestion}”?
+                </p>
+                <div className="owl-card-buttons">
+                  <button className="card-primary" onClick={onGateYes}>
+                    Yes, that's it
+                  </button>
+                  <button className="card-secondary" onClick={onGateNo}>
+                    No
+                  </button>
+                </div>
               </>
             )}
           </div>
-        ) : (
-          <>
-            {response?.praise && !activeHelp && (
-              <p className="owl-praise">{response.praise}</p>
+        )}
+
+        {!gate && board && (
+          <div className="owl-card">
+            <BoardWord
+              letters={[...board.word]}
+              highlight={board.highlight}
+              lit={litLetter}
+            />
+
+            {board.mnemonic === 'bed-hands' && <BedHands />}
+
+            {activeHelp?.spoken && (
+              <p className="owl-card-message">{activeHelp.spoken}</p>
             )}
 
-            {board && (
-              <div className="board-card">
-                <div className="board-word">
-                  {[...board.word].map((letter, i) => (
-                    <span
-                      key={i}
-                      className={[
-                        'board-letter',
-                        board.highlight.includes(i) ? 'tricky' : '',
-                        litLetter === i ? 'lit' : '',
-                      ]
-                        .filter(Boolean)
-                        .join(' ')}
-                    >
-                      {letter}
-                    </span>
-                  ))}
-                </div>
+            <div className="owl-card-buttons">
+              <button
+                className="card-primary"
+                onClick={() => {
+                  onAccept(activeHelp!);
+                  setActiveHelp(null);
+                }}
+              >
+                Fix it for me
+              </button>
+              <button
+                className="card-secondary"
+                onClick={() => setActiveHelp(null)}
+              >
+                I'll do it
+              </button>
+            </div>
+          </div>
+        )}
 
-                {board.mnemonic === 'bed-hands' && <BedHands />}
+        {!gate && praise && (
+          <div className="owl-card owl-card-praise">
+            <p className="owl-card-message">{praise}</p>
+          </div>
+        )}
 
-                <button
-                  className="board-accept"
-                  onClick={() => {
-                    onAccept(activeHelp!);
-                    setActiveHelp(null);
-                  }}
-                >
-                  Fix it for me
-                </button>
-                <button className="board-dismiss" onClick={() => setActiveHelp(null)}>
-                  I'll do it
-                </button>
-              </div>
-            )}
-
-            {response?.nudge && !activeHelp && (
-              <p className="owl-nudge">{response.nudge}</p>
-            )}
-          </>
+        {!gate && !praise && nudge && (
+          <div className="owl-card">
+            <p className="owl-card-message">{nudge}</p>
+          </div>
         )}
       </div>
-    </aside>
+    </>
   );
 }
 
-function OwlFace() {
+function BoardWord({
+  letters,
+  highlight = [],
+  lit = -1,
+}: {
+  letters: string[];
+  highlight?: number[];
+  lit?: number;
+}) {
   return (
-    <svg viewBox="0 0 100 100" width="86" height="86" aria-hidden="true">
-      <ellipse cx="50" cy="58" rx="34" ry="36" fill="#8b6b4a" />
-      <ellipse cx="50" cy="64" rx="24" ry="26" fill="#d6b98c" />
-      <path d="M18 34 L30 16 L40 32 Z" fill="#8b6b4a" />
-      <path d="M82 34 L70 16 L60 32 Z" fill="#8b6b4a" />
-      <circle cx="37" cy="47" r="13" fill="#fffdf7" />
-      <circle cx="63" cy="47" r="13" fill="#fffdf7" />
-      <circle cx="38" cy="48" r="6" fill="#2b2118" />
-      <circle cx="62" cy="48" r="6" fill="#2b2118" />
-      <circle cx="40" cy="46" r="2" fill="#fff" />
-      <circle cx="64" cy="46" r="2" fill="#fff" />
-      <path d="M50 55 L44 63 L56 63 Z" fill="#e0983c" />
-    </svg>
+    <div className="board-word">
+      {letters.map((letter, i) => (
+        <span
+          key={i}
+          className={[
+            'board-letter',
+            highlight.includes(i) ? 'tricky' : '',
+            lit === i ? 'lit' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+        >
+          {letter}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -235,7 +280,7 @@ function OwlFace() {
 function BedHands() {
   return (
     <div className="mnemonic">
-      <svg viewBox="0 0 200 90" width="180" height="81" aria-hidden="true">
+      <svg viewBox="0 0 200 90" width="190" height="86" aria-hidden="true">
         <rect x="30" y="30" width="26" height="34" rx="9" fill="#e8c9a0" />
         <rect x="22" y="14" width="11" height="30" rx="5" fill="#e8c9a0" />
         <text x="43" y="82" textAnchor="middle" className="mnemonic-letter">b</text>

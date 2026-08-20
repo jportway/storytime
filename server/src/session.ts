@@ -78,11 +78,13 @@ export class Session {
     beatText: string;
     raw: string | null;
     corrected: string | null;
+    chapterTitle: string | null;
   }): Promise<{ beat: Beat; whatsNew: string[] }> {
     const beat: Beat = {
       n: this.bible.beats.length + 1,
       panels: opts.panels,
       fork: opts.fork,
+      chapterTitle: opts.chapterTitle,
       cooperDirection: opts.corrected,
       cooperDirectionRaw: opts.raw,
       cooperWordCount: opts.raw
