@@ -631,6 +631,188 @@
       "createdBy": "ai"
     }
   ],
+  "arcs": [
+    {
+      "id": "plan-goes-wrong",
+      "name": "The plan goes wrong",
+      "destination": "the thing they were trying to make happen happens anyway, but nothing like the way they planned it, and it is better for that",
+      "phases": [
+        {
+          "name": "the plan",
+          "intent": "establish what they are trying to pull off and who is counting on it"
+        },
+        {
+          "name": "first crack",
+          "intent": "one small thing goes wrong and is patched over too easily"
+        },
+        {
+          "name": "falling apart",
+          "intent": "the patch fails and takes something bigger with it"
+        },
+        {
+          "name": "the scramble",
+          "intent": "everyone improvises at once, badly, and someone has to choose what to save"
+        },
+        {
+          "name": "it happens anyway",
+          "intent": "the thing arrives in an unrecognisable and better form"
+        }
+      ]
+    },
+    {
+      "id": "secret-gets-out",
+      "name": "A secret gets out",
+      "destination": "the secret is out in the open, and the friendship turns out to be stronger than the thing that was hidden",
+      "phases": [
+        {
+          "name": "setup",
+          "intent": "show the secret mattering quietly, without naming it"
+        },
+        {
+          "name": "the crack",
+          "intent": "something makes keeping it hidden suddenly harder"
+        },
+        {
+          "name": "unravel",
+          "intent": "someone else learns part of it and does not keep it well"
+        },
+        {
+          "name": "reckoning",
+          "intent": "it comes out fully, at the worst possible moment, in front of the wrong person"
+        },
+        {
+          "name": "mend",
+          "intent": "the person who was wronged decides what happens next"
+        }
+      ]
+    },
+    {
+      "id": "someone-lost",
+      "name": "Someone needs fetching",
+      "destination": "the one who was stuck is brought home by whoever was least sure they could do it",
+      "phases": [
+        {
+          "name": "ordinary",
+          "intent": "an ordinary day with one person conspicuously absent"
+        },
+        {
+          "name": "the alarm",
+          "intent": "it becomes clear someone is genuinely in trouble"
+        },
+        {
+          "name": "the wrong way",
+          "intent": "a first confident attempt fails and makes things worse"
+        },
+        {
+          "name": "real danger",
+          "intent": "the rescue costs something and the timid one has to lead"
+        },
+        {
+          "name": "home",
+          "intent": "back safe, changed, and someone gets quiet credit"
+        }
+      ]
+    },
+    {
+      "id": "something-arrives",
+      "name": "Something arrives",
+      "destination": "the newcomer belongs here, and the group has had to change shape to make room",
+      "phases": [
+        {
+          "name": "before",
+          "intent": "the group comfortable and closed, pleased with itself"
+        },
+        {
+          "name": "arrival",
+          "intent": "something or someone turns up that does not fit"
+        },
+        {
+          "name": "friction",
+          "intent": "the group tries to carry on as if nothing has changed"
+        },
+        {
+          "name": "the test",
+          "intent": "the newcomer is the only one who can do the needed thing"
+        },
+        {
+          "name": "room made",
+          "intent": "the group rearranges itself, not entirely graciously"
+        }
+      ]
+    }
+  ],
+  "trouble": [
+    {
+      "id": "buttons-knows",
+      "text": "Princess Buttons works out who has been keeping her tail all this time.",
+      "suits": [
+        "the crack",
+        "unravel",
+        "reckoning"
+      ]
+    },
+    {
+      "id": "tail-found",
+      "text": "Ted's hiding place is found by somebody who is very bad at keeping quiet.",
+      "suits": [
+        "the crack",
+        "unravel"
+      ]
+    },
+    {
+      "id": "time-toilet-misfire",
+      "text": "Somebody leans on the wrong button in the time toilet and the whole scene lands somewhere it should not be.",
+      "suits": []
+    },
+    {
+      "id": "rainbow-cat-waiting",
+      "text": "Rainbow Cat is still tangled in the Deep Wood, and has been for a while, and nobody has gone to get her.",
+      "suits": []
+    },
+    {
+      "id": "henry-proposes",
+      "text": "Henry the eighth arrives and announces a wedding nobody agreed to.",
+      "suits": []
+    },
+    {
+      "id": "princess-in-charge",
+      "text": "The Spoiled Princess demands to be in charge, and — briefly, disastrously — everyone lets her.",
+      "suits": []
+    },
+    {
+      "id": "hatsune-untranslated",
+      "text": "Hatsune has something urgent to say and only Frank can translate it. Frank is not here.",
+      "suits": []
+    },
+    {
+      "id": "eric-solves-it",
+      "text": "Eric Dynamite solves the problem with an explosion, creating a considerably larger problem.",
+      "suits": [
+        "falling apart",
+        "the scramble"
+      ]
+    },
+    {
+      "id": "lol-swarm",
+      "text": "The LOL dolls arrive in a swarm and use up the thing everyone needed.",
+      "suits": []
+    },
+    {
+      "id": "sharon-starts-early",
+      "text": "Sharon the party crow decides the party starts now, several hours early, at full volume.",
+      "suits": []
+    },
+    {
+      "id": "pamela-unchecked",
+      "text": "Pamela does something enormous and chaotic that only Frank could have talked her out of.",
+      "suits": []
+    },
+    {
+      "id": "zapper-wrong-target",
+      "text": "The Brain Zapper 3000 goes off, pointed at entirely the wrong person.",
+      "suits": []
+    }
+  ],
   "currentScene": {
     "placeId": "grimwood-clearing",
     "presentCharacterIds": [

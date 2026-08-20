@@ -122,6 +122,94 @@ export interface Scene {
   decisionPoint: string;
 }
 
+// ---------------------------------------------------------------------------
+// The arc — where a story is quietly heading
+// ---------------------------------------------------------------------------
+
+/**
+ * One movement of an arc. `intent` is what this stretch of story needs to
+ * accomplish, written for the director to reason about, never for Cooper.
+ */
+export interface ArcPhase {
+  name: string;
+  intent: string;
+}
+
+/**
+ * A reusable story shape, authored in the template rather than per story.
+ *
+ * `destination` and `phases` are frozen into a `StoryPlan` the moment an arc
+ * is dealt and are never revisable afterwards — see `StoryPlan` for why.
+ */
+export interface Arc {
+  id: string;
+  name: string;
+  /** What "done" looks like, in one sentence. */
+  destination: string;
+  phases: ArcPhase[];
+}
+
+/**
+ * A piece of pressure the director may play, once, to move things along.
+ *
+ * Cards are the authored half of the director's hand; the other half is
+ * harvested at runtime from things Cooper invented, which are always the
+ * better card to play.
+ */
+export interface TroubleCard {
+  id: string;
+  text: string;
+  /** Phase names this suits. Empty means it fits anywhere. */
+  suits: string[];
+}
+
+/**
+ * Live director state for one story. Cooper never sees any of this.
+ *
+ * The split between frozen and mutable fields is the whole design. A plan
+ * held as prose and "revised each turn" degrades into a paraphrase of the
+ * story so far, because a model asked to reconcile a plan with what just
+ * happened will rewrite the plan to match. So `destination`, `phases` and
+ * `arcId` are set once at deal time and deliberately have no representation
+ * in the director's output schema — it cannot rewrite the destination
+ * because it is given no way to say so. Only the fields below the line move.
+ */
+export interface StoryPlan {
+  // Frozen at deal time.
+  arcId: string;
+  arcName: string;
+  destination: string;
+  phases: ArcPhase[];
+  dealtAtBeat: number;
+
+  // Mutable, and the only things the director may return.
+  /** Index into `phases`. Only ever increases. */
+  phase: number;
+  beatsInPhase: number;
+  /** Card ids and harvested invention ids already spent. Only grows. */
+  played: string[];
+  nextMove: PlanMove;
+  /** She is pushing hard in her own direction; the director stands down. */
+  sheIsDriving: boolean;
+  /** The next beat should resolve rather than fork. */
+  landing: boolean;
+}
+
+/**
+ * What the director wants the next beat to do.
+ *
+ * `instrument` is the lever, and the choice matters: `fork` aims the closing
+ * line, which is an offer Cooper can simply decline, and `complication` uses
+ * the one small complication the storyteller was already allowed. Neither
+ * buys the engine any extra room in her story. `none` means say nothing at
+ * all this turn.
+ */
+export interface PlanMove {
+  instrument: 'fork' | 'complication' | 'none';
+  /** One sentence, addressed to the storyteller. */
+  intent: string;
+}
+
 export interface StoryBible {
   storyId: string;
   title: string;
@@ -137,6 +225,24 @@ export interface StoryBible {
   threads: Thread[];
   beats: Beat[];
   currentScene: Scene;
+  /**
+   * The shapes a story here can take, and the pressure available to push it
+   * along. Copied from the template when the story is created so that dealing
+   * a second arc mid-story, or playing a card at beat nine, needs nothing but
+   * the bible. Authored in /admin.
+   */
+  arcs?: Arc[];
+  trouble?: TroubleCard[];
+  /**
+   * Where this story is heading. Optional because every story written before
+   * the director existed has none, and a story with no plan behaves exactly
+   * as it always did.
+   */
+  plan?: StoryPlan | null;
+  /** Arcs brought to a resolution. A long session can hold several. */
+  arcsCompleted?: number;
+  /** Set when Cooper chose "The End". A finished book. */
+  finishedAt?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -168,6 +274,12 @@ export interface Beat {
    * storyteller decides when the story has earned a new one.
    */
   chapterTitle?: string | null;
+  /**
+   * This beat landed the story instead of forking: it resolves rather than
+   * leaving her at a cliffhanger, and `fork` holds its closing line. The
+   * point where she is offered "The End".
+   */
+  landing?: boolean;
   /**
    * What Cooper typed to cause this beat, spelling-corrected. Null for the
    * opening beat, which nobody directed.
@@ -310,6 +422,11 @@ export interface Profile {
 export type StoryStreamEvent =
   | { type: 'panel'; panel: Panel }
   | { type: 'fork'; text: string }
+  /**
+   * The beat resolved rather than forking. The story is at a natural end and
+   * Cooper is about to be asked whether it is over.
+   */
+  | { type: 'landing'; text: string }
   /** This beat opens a new chapter. Sent before any panel of that beat. */
   | { type: 'chapter'; title: string }
   | { type: 'beat-complete'; beat: Beat }
