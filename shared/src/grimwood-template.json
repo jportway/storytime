@@ -165,9 +165,9 @@
         "loyal"
       ],
       "wants": "a quiet life, which he is never going to get",
-      "description": "A stout, permanently sleepy-looking owl who misses nothing. No-nonsense and deeply unimpressed by almost everything, but kind and fiercely loyal underneath it — he'd never admit that part out loud. Best friends with Titus, who he often plays cards with. He's the only one who can really talk Pamela down when she's being chaotic; everyone else is too scared of her.",
+      "description": "A stout, permanently sleepy-looking owl who misses nothing. No-nonsense and deeply unimpressed by almost everything, but kind and fiercely loyal underneath it — he'd never admit that part out loud. Best friends with Titus, who he often plays cards with. He's the only one who can really talk Pamela down when she's being chaotic; everyone else is too scared of her. Suprisingly Frank can speak Japanese, and so is the only character who can translet for Hatsune when she wants to express something too complex for her grasp of English.",
       "appearance": "A stout owl with hooded eyes and rumpled feathers. Looks permanently half asleep.",
-      "voice": "Flat, dry, very few words. Deflates people in one sentence.",
+      "voice": "Flat, dry, very few words. He has a soft higland scotish accent. Deflates people in one sentence.",
       "examples": [
         "‘Aww, what an adorable wee laddie,’ said Frank, pecking at a bit of leftover breakfast worm from his talons. ‘There’s plenty to see in Grimwood, young Ted.’",
         "‘They call it “the Magic Tower”,’ said Frank. ‘It’s an electricity pylon,’ said Nancy flatly. ‘Aye, I know, clever clogs,’ said Frank. ‘It certainly used to be. But now… well, now it’s a little bit more than that.’"
@@ -316,7 +316,7 @@
         "‘AWOOOGA! Let’s party!’ Ted had accidentally stepped on Sharon the Party Crow. ‘SHHHHHHH!’ shhhh’d Ted. ‘Party time – ACTIVATED!’ said Sharon, who then blew a kazoo extremely loudly."
       ],
       "status": "fine",
-      "location": "grimwood-clearing",
+      "location": "limbo",
       "carrying": [],
       "relationships": [
         {
@@ -345,7 +345,7 @@
       "voice": "A strong and confident 8 year old who talks more like a teenager sometimes, and will often comment with amazingly adult observations.",
       "examples": [],
       "status": "fine",
-      "location": "grimwood-clearing",
+      "location": "limbo",
       "carrying": [],
       "relationships": [],
       "secrets": [
@@ -370,7 +370,7 @@
         "\"It's time for your checkup, it's time for your checkup, check your ear, check your eyes, find out how much you've grown...\""
       ],
       "status": "fine",
-      "location": "bedroom",
+      "location": "limbo",
       "carrying": [],
       "relationships": [],
       "secrets": []
@@ -378,7 +378,7 @@
     {
       "id": "spoiled-princess",
       "name": "Spoiled Princess",
-      "role": "villain",
+      "role": "friend",
       "createdBy": "ai",
       "traits": [
         "self-centred and spoiled",
@@ -386,9 +386,9 @@
         "has tantrums, threatens to have people's heads chopped off"
       ],
       "wants": "to own all the toys, to get everyone to do her bidding, to be the most important person",
-      "description": "Thinks she's very fancy and glamorous, but mostly she's just annoying. She's been utterly spoiled by her parents, who are too busy to give her any real attention and just buy her whatever she wants instead.",
-      "appearance": "A floppy pink soft-toy rabbit.",
-      "voice": "Shrill and demanding.",
+      "description": "A floppy pink soft-toy rabbit. Thinks she's very fancy and glamorous, but mostly she's just annoying. She's been utterly spoiled by her parents, who are too busy to give her any real attention and just buy her whatever she wants instead. She likes to remind people that she is a Real Princess - often as justification for making unreasonable demands on them. She is used to being waited on hand and foot - or at least this is how she feels she deserves to be treated because \"I'm a princess you know\". Despite her annoying nature Cooper still likes to play with her. Her role in the story is often to act as an anti-role-model, to show how annoying spoilt and self centered people are. Usually, after a while she will learn her lesson and act more pro-socially and everyone else will warm to her. ",
+      "appearance": "",
+      "voice": "Shrill and demanding. She's very much Miss PIggy from the Muppets, if Miss piggy was a pink bunny princess. ",
       "examples": [],
       "status": "fine",
       "location": "bedroom",
@@ -397,6 +397,118 @@
       "secrets": [
         "Really she just wants people to like her, but she is too proud to admit it and doesn't have the social skill or self-awareness to understand why she annoys people."
       ]
+    },
+    {
+      "id": "hatsune",
+      "name": "Hatsune",
+      "role": "friend",
+      "createdBy": "ai",
+      "traits": [
+        "playful",
+        "cute",
+        "shy"
+      ],
+      "wants": "to be friends with Cooper",
+      "description": "A soft toy that looks like a very, very cute Japanese character. She has long green hair and the most beautiful smile. She is a bit shy and lost. She is Cooper's newest toy and doesn't know anyone else yet. ",
+      "appearance": "",
+      "voice": "a very cute soft voice, she speaks english with a japanese accent and occcasional lapses into Japanese when she wants to say something that she doesn't have the vocabulary for",
+      "examples": [],
+      "status": "fine",
+      "location": "limbo",
+      "carrying": [],
+      "relationships": [],
+      "secrets": []
+    },
+    {
+      "id": "rainbow-cat",
+      "name": "Rainbox Cat",
+      "role": "friend",
+      "createdBy": "ai",
+      "traits": [
+        "exhuberant",
+        "happy",
+        "a bit tired from her long journey"
+      ],
+      "wants": "to come home to cooper",
+      "description": "A Balloon in the shape of a cat with a rainbow coloured tail. Cooper lost her a long time ago, and she flew up high up - nearly into space. Since then she has travelled all around the world and come back to be with Cooper again. She has stories of the faraway lands that she saw below her, and friendly birds who gave her directions.  She was nearly home when she became engangled in a tree in Grimwood - which is where she is now. ",
+      "appearance": "",
+      "voice": "panting, cute, childlike",
+      "examples": [],
+      "status": "fine",
+      "location": "deep-wood",
+      "carrying": [],
+      "relationships": [],
+      "secrets": []
+    },
+    {
+      "id": "lime",
+      "name": "Lime",
+      "role": "friend",
+      "createdBy": "ai",
+      "traits": [
+        "compassionate",
+        "tiny",
+        "gently",
+        "soft",
+        "vulnerable",
+        "motherly"
+      ],
+      "wants": "",
+      "description": "A tiny mouse toy, made of fabric, who lives in a matchbox. She has been Cooper's toy for a long time. She is Danish, but speaks English very well. She had some other mouse friends liveing with Cooper in the past, but they were travellers who have moved on and she doesn't know where they are now. Lime is humble and  compassionate and motherly and cares for Cooper very much. ",
+      "appearance": "a small grey mouse",
+      "voice": "",
+      "examples": [],
+      "status": "fine",
+      "location": "bedroom",
+      "carrying": [],
+      "relationships": [],
+      "secrets": []
+    },
+    {
+      "id": "lols",
+      "name": "LOL dolls",
+      "role": "friend",
+      "createdBy": "ai",
+      "traits": [
+        "only interested in fashion",
+        "constantly checking their hair and makeup",
+        "consequently quite dull to be around"
+      ],
+      "wants": "",
+      "description": "The Lol dolls are a swarm of nearly identical dolls with big heads and generic cute features. There are lots and lots of LOL dolls, but they are all very similar. They are mostly differentiated only by their clothes. They are obsessed with fashion and make up and are generally pretty vaccuous and annoying. ",
+      "appearance": "",
+      "voice": "high pitched and squeeky, annoying valley speak",
+      "examples": [
+        "\"she's so like, uh, awesome yeah. OMG, I love it SOOOO much\""
+      ],
+      "status": "fine",
+      "location": "limbo",
+      "carrying": [],
+      "relationships": [],
+      "secrets": []
+    },
+    {
+      "id": "henry",
+      "name": "Henry the eighth",
+      "role": "villain",
+      "createdBy": "ai",
+      "traits": [
+        "pompous",
+        "arrogant",
+        "narcisistic",
+        "ridiculous",
+        "silly"
+      ],
+      "wants": "to marry cooper",
+      "description": "Basically the real Henry the 8th. Very confused about what he's doing in a child's story in the modern world instead of being a monarch in tudor england. A pretty horrible person, but in a funny way (think Horrible Histories style). ",
+      "appearance": "",
+      "voice": "pompous and arrogant. ",
+      "examples": [],
+      "status": "fine",
+      "location": "limbo",
+      "carrying": [],
+      "relationships": [],
+      "secrets": []
     }
   ],
   "places": [
@@ -457,6 +569,24 @@
       "name": "Cooper's bedroom",
       "description": "This is Cooper's home, and the real home to all the toys and imaginary characters that make up the story. The room contains a bunk bed and several huge overflowing boxes and baskets of soft toys — Cooper's friends, with which she builds her imaginary worlds.",
       "appearance": "Absolute chaos — toys and clothes everywhere.",
+      "createdBy": "ai",
+      "connectsTo": []
+    },
+    {
+      "id": "time-toilet",
+      "name": "The time toilet",
+      "description": "The time toilet is actually a circular trampoline, but in Cooper's imaginative world it becomes a time machine that can take you any time or place. During the time travelling process everyone is spun around and bounces on the trampoline in a chaotic way. Unfortunately, the time toilet has a LOT of buttons inside and no one really knows how it works, so very often people just press a button by mistake and end up in the Jurassic era, or Henry the 8ths court. ",
+      "appearance": "",
+      "createdBy": "ai",
+      "connectsTo": [
+        "bedroom"
+      ]
+    },
+    {
+      "id": "limbo",
+      "name": "limbo",
+      "description": "this is not an actual location in the story and shouldn't be presented to the user - this is a NULL location where characters are placed before they appear in the story. Any character in Limbo can be introduced into the story if an opportune moment arises",
+      "appearance": "",
       "createdBy": "ai",
       "connectsTo": []
     }
