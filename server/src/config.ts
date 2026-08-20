@@ -27,6 +27,14 @@ export const config = {
 
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
 
+  /**
+   * A GCS bucket name. Set it and stories, the profile, the token ledger and
+   * the audio cache all move there; leave it unset and everything stays on
+   * the local filesystem exactly as it was, so development needs no cloud
+   * account at all.
+   */
+  storageBucket: process.env.STORAGE_BUCKET,
+
   elevenLabs: {
     apiKey: process.env.ELEVENLABS_API_KEY,
     voiceId: process.env.ELEVENLABS_VOICE_ID,

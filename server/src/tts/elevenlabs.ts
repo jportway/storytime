@@ -1,19 +1,14 @@
 import crypto from 'node:crypto';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import { config, hasElevenLabs } from '../config.js';
+import { AUDIO_PREFIX, audioBlobs } from '../storage.js';
 
 const ENDPOINT = 'https://api.elevenlabs.io/v1/text-to-speech';
 
 /** The 26 letter names, pre-rendered once and reused forever. See spellOut(). */
 const LETTERS = 'abcdefghijklmnopqrstuvwxyz'.split('');
 
-async function ensureCacheDir(): Promise<void> {
-  await fs.mkdir(config.paths.ttsCache, { recursive: true });
-}
-
-function cachePath(key: string): string {
-  return path.join(config.paths.ttsCache, `${key}.mp3`);
+function objectKey(text: string): string {
+  return `${AUDIO_PREFIX}${keyFor(text)}.mp3`;
 }
 
 function keyFor(text: string): string {
@@ -34,14 +29,9 @@ function keyFor(text: string): string {
 export async function synthesise(text: string): Promise<Buffer | null> {
   if (!hasElevenLabs()) return null;
 
-  await ensureCacheDir();
-  const file = cachePath(keyFor(text));
-
-  try {
-    return await fs.readFile(file);
-  } catch {
-    // Cache miss — fall through and generate.
-  }
+  const key = objectKey(text);
+  const cached = await audioBlobs.read(key);
+  if (cached) return cached;
 
   const response = await fetch(
     `${ENDPOINT}/${config.elevenLabs.voiceId}?output_format=mp3_44100_128`,
@@ -72,10 +62,32 @@ export async function synthesise(text: string): Promise<Buffer | null> {
   }
 
   const audio = Buffer.from(await response.arrayBuffer());
-  await fs.writeFile(file, audio).catch(() => {
-    /* a cache write failure is not worth failing the request over */
-  });
+  await audioBlobs
+    .write(key, audio, {
+      contentType: 'audio/mpeg',
+      // Public so the browser can fetch repeat plays straight from the
+      // bucket without waking the server. These are 26 letter names and a
+      // few stock owl lines — nothing private.
+      publicRead: true,
+    })
+    .catch(() => {
+      /* a cache write failure is not worth failing the request over */
+    });
   return audio;
+}
+
+/**
+ * A URL the browser can fetch this clip from directly, if it is already
+ * cached and the backend can serve bytes itself.
+ *
+ * Letter clips are by far the owl's most-repeated audio, and serving them
+ * from the bucket keeps every repeat play off the server entirely.
+ */
+export async function cachedAudioUrl(text: string): Promise<string | null> {
+  const key = objectKey(text);
+  const url = audioBlobs.publicUrl(key);
+  if (!url) return null;
+  return (await audioBlobs.exists(key)) ? url : null;
 }
 
 /**
@@ -85,7 +97,12 @@ export async function synthesise(text: string): Promise<Buffer | null> {
  * spelling a word aloud would otherwise depend on text pacing tricks
  * ("G ... O ... E ... S") that come out differently run to run. Twenty-six
  * cached clips are perfectly consistent, instant, and free after the first
- * generation. Run once at startup; it's a no-op on every later boot.
+ * generation.
+ *
+ * Deliberately NOT run at startup: on Cloud Run the process restarts every
+ * time Cooper comes back after a break, and 26 sequential API calls is a
+ * terrible thing to do on every cold start. Run it once by hand against the
+ * bucket instead — `npm run seed-audio`.
  */
 export async function warmLetterClips(): Promise<void> {
   if (!hasElevenLabs()) return;

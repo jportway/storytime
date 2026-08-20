@@ -18,31 +18,33 @@
 import type { StoryBible } from './types.js';
 import template from './grimwood-template.json' with { type: 'json' };
 
-type GrimwoodTemplate = Omit<StoryBible, 'storyId' | 'createdAt' | 'beats'>;
+export type GrimwoodTemplate = Omit<
+  StoryBible,
+  'storyId' | 'createdAt' | 'beats'
+>;
+
+/**
+ * The template compiled into the build.
+ *
+ * This is the fallback, not the source of truth: the server loads the live
+ * template through the store, which on a laptop is this very file and in the
+ * cloud is an object in the bucket. It matters that this stays a plain value
+ * rather than the thing the running server reads, because a deployed server
+ * never restarts to pick up a file change.
+ */
+export const GRIMWOOD_TEMPLATE = template as GrimwoodTemplate;
 
 /** Build a fresh Grimwood bible. Called once per new story. */
-export function makeGrimwoodBible(storyId: string): StoryBible {
+export function makeGrimwoodBible(
+  storyId: string,
+  from: GrimwoodTemplate = GRIMWOOD_TEMPLATE,
+): StoryBible {
   return {
-    // Deep-copied so a long session can never mutate the module-level
-    // template and leak one story's events into the next.
-    ...structuredClone(template as GrimwoodTemplate),
+    // Deep-copied so a long session can never mutate the template and leak
+    // one story's events into the next.
+    ...structuredClone(from),
     storyId,
     createdAt: new Date().toISOString(),
     beats: [],
   };
 }
-
-/**
- * Every proper noun in the starting cast, so the spell checker never
- * underlines "Grimwood" or "Treebonk" at Cooper.
- */
-export const GRIMWOOD_PROPER_NOUNS: string[] = [
-  ...template.characters.map((c) => c.name),
-  ...template.places.map((p) => p.name),
-  ...template.things.map((t) => t.name),
-  'Grimwood',
-  'Treebonk',
-  'Dynamite',
-]
-  .flatMap((name) => name.split(/[\s']+/))
-  .filter((w) => w.length > 1);
