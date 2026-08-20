@@ -8,7 +8,7 @@ import {
 import { applyDelta, properNouns } from './bible.js';
 import { extractDelta } from './claude/archivist.js';
 import { Storyteller } from './claude/storyteller.js';
-import { loadProfile, loadStory, saveStory } from './store.js';
+import { loadProfile, loadStory, loadTemplate, saveStory } from './store.js';
 
 /**
  * One in-progress story, held in memory for the life of the process and
@@ -23,7 +23,10 @@ export class Session {
 
   static async create(): Promise<Session> {
     const storyId = `story-${Date.now().toString(36)}`;
-    const bible = makeGrimwoodBible(storyId);
+    // Loaded per story rather than imported once, so an edit made in /admin
+    // is picked up by the very next new story without a restart — which a
+    // deployed server never gets.
+    const bible = makeGrimwoodBible(storyId, await loadTemplate());
     const checker = await buildChecker(bible);
     return new Session(bible, new Storyteller(bible), checker);
   }

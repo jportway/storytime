@@ -2,6 +2,10 @@
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
+    // Keep incremental state inside dist so `rm -rf dist` is a real clean;
+    // the default location beside tsconfig.json survives deletion and makes
+    // `tsc -b` silently emit nothing.
+    "tsBuildInfoFile": "./dist/tsconfig.tsbuildinfo",
     "rootDir": "./src",
     "jsx": "react-jsx",
     "noEmit": false,

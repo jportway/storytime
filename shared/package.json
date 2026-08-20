@@ -7,8 +7,10 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "//": "development resolves to TypeScript source so tsx and vite transpile it live; anything else (a built container running node dist/index.js) gets compiled JavaScript.",
+      "development": "./src/index.ts",
+      "default": "./dist/index.js"
     }
   },
   "scripts": {

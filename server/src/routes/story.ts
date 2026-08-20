@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { wrap } from '../asyncRoute.js';
 import type { StoryStreamEvent } from '@storytime/shared';
 import { computeCredit } from '../bible.js';
 import { Session } from '../session.js';
@@ -7,17 +8,17 @@ import { listStories, loadProfile, saveProfile, updateProfile } from '../store.j
 
 export const storyRouter = Router();
 
-storyRouter.get('/stories', async (_req, res) => {
+storyRouter.get('/stories', wrap(async (_req, res) => {
   res.json(await listStories());
-});
+}));
 
-storyRouter.post('/stories', async (_req, res) => {
+storyRouter.post('/stories', wrap(async (_req, res) => {
   const session = await Session.create();
   registerSession(session);
   res.json({ bible: session.bible });
-});
+}));
 
-storyRouter.get('/stories/:storyId', async (req, res) => {
+storyRouter.get('/stories/:storyId', wrap(async (req, res) => {
   const session = await getSession(req.params.storyId!);
   if (!session) {
     res.status(404).json({ error: 'No such story' });
@@ -27,16 +28,16 @@ storyRouter.get('/stories/:storyId', async (req, res) => {
     bible: session.bible,
     credit: computeCredit(session.bible),
   });
-});
+}));
 
-storyRouter.get('/stories/:storyId/credit', async (req, res) => {
+storyRouter.get('/stories/:storyId/credit', wrap(async (req, res) => {
   const session = await getSession(req.params.storyId!);
   if (!session) {
     res.status(404).json({ error: 'No such story' });
     return;
   }
   res.json(computeCredit(session.bible));
-});
+}));
 
 /**
  * Write the next beat, streaming panels as they're written.
@@ -45,7 +46,7 @@ storyRouter.get('/stories/:storyId/credit', async (req, res) => {
  * a time — watching the story appear is a large part of the fun, and a long
  * silent wait is exactly where a ten-year-old loses interest.
  */
-storyRouter.post('/stories/:storyId/beat', async (req, res) => {
+storyRouter.post('/stories/:storyId/beat', wrap(async (req, res) => {
   const session = await getSession(req.params.storyId!);
   if (!session) {
     res.status(404).json({ error: 'No such story' });
@@ -117,4 +118,4 @@ storyRouter.post('/stories/:storyId/beat', async (req, res) => {
   } finally {
     res.end();
   }
-});
+}));

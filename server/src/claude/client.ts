@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import fs from 'node:fs';
 import path from 'node:path';
 import { config } from '../config.js';
+import { loadSpend, saveSpend, type Spend } from '../store.js';
 
 export const anthropic = new Anthropic({ apiKey: config.anthropicApiKey });
 
@@ -32,15 +33,52 @@ export function loadPrompt(name: string): string {
 // Token budget
 // ---------------------------------------------------------------------------
 
-interface Spend {
-  day: string;
-  tokens: number;
-}
-
+/**
+ * The daily ledger, cached in memory and mirrored to storage.
+ *
+ * Kept in memory because recordUsage() is called from inside streaming
+ * callbacks where an await would be awkward, and mirrored to storage because
+ * on Cloud Run this process is destroyed every time Cooper stops playing —
+ * an in-memory-only counter would reset to zero constantly and the daily cap
+ * would silently protect nothing.
+ */
 let spend: Spend = { day: today(), tokens: 0 };
+let flushTimer: NodeJS.Timeout | null = null;
 
 function today(): string {
   return new Date().toISOString().slice(0, 10);
+}
+
+/** Load the persisted ledger. Call once, before serving traffic. */
+export async function initBudget(): Promise<void> {
+  try {
+    const saved = await loadSpend();
+    if (saved && saved.day === today()) spend = saved;
+  } catch (err) {
+    // A ledger we can't read is not a reason to refuse to start; the
+    // in-memory counter still caps a single runaway session.
+    console.warn('[budget] could not load spend ledger:', err);
+  }
+}
+
+function scheduleFlush(): void {
+  if (flushTimer) return;
+  // Coalesced: a single beat makes several API calls, and they only need to
+  // produce one write.
+  flushTimer = setTimeout(() => {
+    flushTimer = null;
+    void flushBudget();
+  }, 2000);
+  // Never hold the process open just to write a counter.
+  flushTimer.unref?.();
+}
+
+export async function flushBudget(): Promise<void> {
+  try {
+    await saveSpend(spend);
+  } catch (err) {
+    console.warn('[budget] could not save spend ledger:', err);
+  }
 }
 
 export function recordUsage(usage: {
@@ -50,6 +88,7 @@ export function recordUsage(usage: {
   if (!usage) return;
   if (spend.day !== today()) spend = { day: today(), tokens: 0 };
   spend.tokens += (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0);
+  scheduleFlush();
 }
 
 export function assertWithinBudget(): void {

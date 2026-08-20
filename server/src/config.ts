@@ -27,6 +27,38 @@ export const config = {
 
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
 
+  /**
+   * A GCS bucket name. Set it and stories, the profile, the token ledger and
+   * the audio cache all move there; leave it unset and everything stays on
+   * the local filesystem exactly as it was, so development needs no cloud
+   * account at all.
+   */
+  storageBucket: process.env.STORAGE_BUCKET,
+
+  /**
+   * Base URL for publicly-readable audio objects. Unset by default: the
+   * bucket holds Cooper's stories and uses uniform bucket-level access, so
+   * nothing in it is public and all audio is served through the app.
+   */
+  publicAudioBaseUrl: process.env.PUBLIC_AUDIO_BASE_URL,
+
+  auth: {
+    /** Opens the game. Unset on a laptop means no gate at all. */
+    appPassword: process.env.APP_PASSWORD,
+    /**
+     * Opens /admin. Deliberately separate from appPassword: Cooper has the
+     * game password by definition, and the bible editor should not be one
+     * URL away from her.
+     */
+    adminPassword: process.env.ADMIN_PASSWORD,
+    /**
+     * Optional extra salt for session cookies. Not required — cookies are
+     * already signed with a key derived from the password, so changing a
+     * password invalidates its sessions on its own.
+     */
+    sessionSecret: process.env.SESSION_SECRET,
+  },
+
   elevenLabs: {
     apiKey: process.env.ELEVENLABS_API_KEY,
     voiceId: process.env.ELEVENLABS_VOICE_ID,
@@ -62,6 +94,11 @@ export const config = {
     ttsCache: path.resolve(here, '../.cache/tts'),
     /** The default starting cast, editable from /admin. */
     grimwoodTemplate: path.join(repoRoot, 'shared/src/grimwood-template.json'),
+    /**
+     * The built SPA. Only present in a production image — in development
+     * Vite serves the app on :5173 and this directory doesn't exist.
+     */
+    webDist: path.join(repoRoot, 'web/dist'),
   },
 } as const;
 

@@ -32,10 +32,74 @@ spend real money while Cooper is playing unsupervised. A normal hour-long
 session is roughly 40k tokens.
 
 ```bash
-npm test                 # 58 tests, no API key needed
+npm test                 # 61 tests, no API key needed
 npm run replay           # run a scripted session headlessly (needs a key)
 npm run typecheck
 ```
+
+## Deploying it
+
+The app is designed to cost nothing when nobody is playing. It runs as a
+single **Cloud Run** service that scales to zero: you pay while a request is
+in flight and not otherwise, which for an hour a week sits inside Google's
+free tier. The only real running cost stays what it always was — Anthropic
+tokens and ElevenLabs characters.
+
+Everything that used to be a file becomes an object in one GCS bucket. Set
+`STORAGE_BUCKET` and the server switches over; leave it unset and development
+is exactly as it was, on the local filesystem, with no cloud account needed.
+
+Region is `europe-north2` (Stockholm): 100% carbon-free energy at 3 gCO2eq/kWh
+— the cleanest grid Google runs — and Tier 1 pricing, so it is also among the
+cheapest. Latency from the UK is ~35ms rather than ~5ms from London, which is
+invisible next to a multi-second Opus call. London is both dirtier (79% CFE)
+and Tier 2, so it loses on every axis that matters here.
+
+```bash
+BUCKET=storytime-cooper-data
+REGION=europe-north2   # Stockholm: 100% carbon-free energy, and Tier 1 pricing
+
+# 1. One bucket for stories, the profile, the template and cached audio.
+#    Uniform access: nothing in here is public, it holds a child's writing.
+gcloud storage buckets create gs://$BUCKET --location=$REGION \
+  --uniform-bucket-level-access
+
+# 2. Secrets. Never bake these into the image.
+for s in ANTHROPIC_API_KEY ELEVENLABS_API_KEY APP_PASSWORD ADMIN_PASSWORD; do
+  gcloud secrets create $s --replication-policy=automatic
+  printf '%s' "$VALUE" | gcloud secrets versions add $s --data-file=-
+done
+
+# 3. Move the audio already cached on this machine into the bucket, rather
+#    than paying ElevenLabs to generate 76 clips a second time.
+STORAGE_BUCKET=$BUCKET npm run seed-audio
+
+# 4. Deploy. Cloud Build builds the Dockerfile remotely — no local Docker.
+gcloud run deploy storytime --source . \
+  --region=$REGION --allow-unauthenticated \
+  --max-instances=1 --timeout=600 --memory=512Mi --cpu-boost \
+  --set-env-vars=STORAGE_BUCKET=$BUCKET \
+  --set-secrets=ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest,\
+ELEVENLABS_API_KEY=ELEVENLABS_API_KEY:latest,\
+APP_PASSWORD=APP_PASSWORD:latest,\
+ADMIN_PASSWORD=ADMIN_PASSWORD:latest
+```
+
+`--allow-unauthenticated` is about Google IAM, not about the app being open:
+the app has its own password gate, because IAM sign-in is not something a
+ten-year-old can do on an iPad. `--max-instances=1` is deliberate — with one
+player it costs nothing and guarantees exactly one container exists, so the
+in-memory session cache stays coherent and two writes can never race.
+
+**Two passwords.** `APP_PASSWORD` opens the game; `ADMIN_PASSWORD` opens
+`/admin`. They are separate on purpose: Cooper has the first one by
+definition, and the tool that rewrites her story world should not be one URL
+away from her. The server **refuses to start** if `STORAGE_BUCKET` is set and
+either is missing — an internet-facing URL with a metered API key behind it
+is a standing bill, and a warning in a log nobody reads is not protection.
+
+Sessions are signed cookies valid for 90 days, keyed off the password itself,
+so changing a password signs everyone out.
 
 ## How it works
 
@@ -107,6 +171,9 @@ server/     express + SSE, the three Claude roles, prompts as markdown
 web/        React SPA — panels, writing box, owl, Who's Who
 data/       her stories and writing profile (gitignored)
 ```
+
+In the cloud, `data/` and the audio cache become one GCS bucket; see
+`server/src/storage.ts`, which is the only file that knows the difference.
 
 **Prompts live in `server/src/prompts/*.md`, not in TypeScript.** Nearly all
 the iteration here is prompt tuning, and it shouldn't require touching code.

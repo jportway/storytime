@@ -1,6 +1,7 @@
 import { Router } from 'express';
+import { wrap } from '../asyncRoute.js';
 import { hasElevenLabs } from '../config.js';
-import { letterPhrase, synthesise } from '../tts/elevenlabs.js';
+import { cachedAudioUrl, letterPhrase, synthesise } from '../tts/elevenlabs.js';
 
 export const ttsRouter = Router();
 
@@ -10,7 +11,7 @@ ttsRouter.get('/tts/status', (_req, res) => {
   res.json({ available: hasElevenLabs() });
 });
 
-ttsRouter.post('/tts/speak', async (req, res) => {
+ttsRouter.post('/tts/speak', wrap(async (req, res) => {
   const text = typeof req.body?.text === 'string' ? req.body.text.trim() : '';
   if (!text) {
     res.status(400).json({ error: 'text is required' });
@@ -30,7 +31,7 @@ ttsRouter.post('/tts/speak', async (req, res) => {
     console.error('[tts] failed:', err);
     res.status(502).json({ error: 'Speech synthesis failed' });
   }
-});
+}));
 
 /**
  * A single letter, from the pre-rendered clips.
@@ -39,7 +40,7 @@ ttsRouter.post('/tts/speak', async (req, res) => {
  * ElevenLabs has no reliable say-as-characters support — so the 26 letters
  * are generated once and stitched. Consistent, instant, and free.
  */
-ttsRouter.get('/tts/letter/:letter', async (req, res) => {
+ttsRouter.get('/tts/letter/:letter', wrap(async (req, res) => {
   const letter = (req.params.letter ?? '').toLowerCase();
   if (!/^[a-z]$/.test(letter)) {
     res.status(400).json({ error: 'Expected a single letter a-z' });
@@ -47,6 +48,15 @@ ttsRouter.get('/tts/letter/:letter', async (req, res) => {
   }
 
   try {
+    // Already in the bucket: hand the browser the object URL and stay out of
+    // the way. These 26 clips are the owl's most-replayed audio by a wide
+    // margin, so keeping repeat plays off the server matters.
+    const direct = await cachedAudioUrl(letterPhrase(letter));
+    if (direct) {
+      res.redirect(302, direct);
+      return;
+    }
+
     const audio = await synthesise(letterPhrase(letter));
     if (!audio) {
       res.status(503).json({ error: 'ElevenLabs is not configured' });
@@ -59,4 +69,4 @@ ttsRouter.get('/tts/letter/:letter', async (req, res) => {
     console.error('[tts] letter failed:', err);
     res.status(502).json({ error: 'Speech synthesis failed' });
   }
-});
+}));

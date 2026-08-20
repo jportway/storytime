@@ -1,10 +1,9 @@
-import fs from 'node:fs/promises';
 import { Router } from 'express';
-import type { StoryBible } from '@storytime/shared';
+import { wrap } from '../asyncRoute.js';
+import type { GrimwoodTemplate, StoryBible } from '@storytime/shared';
 import { properNouns } from '../bible.js';
-import { config } from '../config.js';
 import { getSession } from '../sessions.js';
-import { saveStory } from '../store.js';
+import { loadTemplate, saveStory, saveTemplate } from '../store.js';
 
 export const adminRouter = Router();
 
@@ -12,17 +11,18 @@ export const adminRouter = Router();
  * A personal, unauthenticated editor for the story bible — characters,
  * places, things, threads, world rules, the current scene. Not shown to
  * Cooper; this is for Josh to fix continuity slips or seed the world by
- * hand. Localhost-only app, so no auth: don't expose this port publicly.
+ * hand. Gated behind its own admin password, separate from the one that
+ * opens the game — see requireAdmin in auth.ts.
  */
 
-adminRouter.get('/admin/bible/:storyId', async (req, res) => {
+adminRouter.get('/bible/:storyId', wrap(async (req, res) => {
   const session = await getSession(req.params.storyId!);
   if (!session) {
     res.status(404).json({ error: 'No such story' });
     return;
   }
   res.json(session.bible);
-});
+}));
 
 function isValidBible(body: unknown): body is StoryBible {
   if (!body || typeof body !== 'object') return false;
@@ -40,7 +40,7 @@ function isValidBible(body: unknown): body is StoryBible {
   );
 }
 
-adminRouter.put('/admin/bible/:storyId', async (req, res) => {
+adminRouter.put('/bible/:storyId', wrap(async (req, res) => {
   const storyId = req.params.storyId!;
   const session = await getSession(storyId);
   if (!session) {
@@ -59,15 +59,13 @@ adminRouter.put('/admin/bible/:storyId', async (req, res) => {
 
   await saveStory(session.bible, session.getStoryteller().getMessages());
   res.json(session.bible);
-});
+}));
 
 // ---------------------------------------------------------------------------
 // The default template — what every *new* story is seeded from. Editing a
 // story's own bible above only affects that one story; editing the template
 // changes the starting point for everything created after the save.
 // ---------------------------------------------------------------------------
-
-type GrimwoodTemplate = Omit<StoryBible, 'storyId' | 'createdAt' | 'beats'>;
 
 function isValidTemplate(body: unknown): body is GrimwoodTemplate {
   if (!body || typeof body !== 'object') return false;
@@ -83,12 +81,11 @@ function isValidTemplate(body: unknown): body is GrimwoodTemplate {
   );
 }
 
-adminRouter.get('/admin/template', async (_req, res) => {
-  const raw = await fs.readFile(config.paths.grimwoodTemplate, 'utf8');
-  res.json(JSON.parse(raw));
-});
+adminRouter.get('/template', wrap(async (_req, res) => {
+  res.json(await loadTemplate());
+}));
 
-adminRouter.put('/admin/template', async (req, res) => {
+adminRouter.put('/template', wrap(async (req, res) => {
   if (!isValidTemplate(req.body)) {
     res.status(400).json({ error: 'Malformed template' });
     return;
@@ -109,11 +106,6 @@ adminRouter.put('/admin/template', async (req, res) => {
     currentScene,
   };
 
-  // Write-then-rename, same as story saves: a crash mid-write can't corrupt
-  // the template every new story depends on.
-  const tmp = `${config.paths.grimwoodTemplate}.tmp`;
-  await fs.writeFile(tmp, JSON.stringify(template, null, 2), 'utf8');
-  await fs.rename(tmp, config.paths.grimwoodTemplate);
-
+  await saveTemplate(template);
   res.json(template);
-});
+}));

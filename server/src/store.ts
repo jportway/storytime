@@ -1,7 +1,8 @@
 import fs from 'node:fs/promises';
-import path from 'node:path';
-import type { Profile, StoryBible } from '@storytime/shared';
+import type { GrimwoodTemplate, Profile, StoryBible } from '@storytime/shared';
+import { GRIMWOOD_TEMPLATE } from '@storytime/shared';
 import { config } from './config.js';
+import { blobs, isCloudStorage } from './storage.js';
 import type { StorytellerMessage } from './claude/storyteller.js';
 
 export interface SavedStory {
@@ -11,17 +12,25 @@ export interface SavedStory {
   updatedAt: string;
 }
 
-async function ensureDir(dir: string): Promise<void> {
-  await fs.mkdir(dir, { recursive: true });
+const STORIES_PREFIX = 'stories/';
+const PROFILE_KEY = 'cooper-profile.json';
+const TEMPLATE_KEY = 'template.json';
+const SPEND_KEY = 'spend.json';
+
+function storyKey(storyId: string): string {
+  // Guard against a crafted id escaping the stories prefix.
+  const safe = storyId.replace(/[^a-zA-Z0-9_-]/g, '');
+  return `${STORIES_PREFIX}${safe}.json`;
 }
 
-function storyPath(storyId: string): string {
-  // Guard against a crafted id escaping the data directory.
-  const safe = path.basename(storyId).replace(/[^a-zA-Z0-9_-]/g, '');
-  return path.join(config.paths.data, 'stories', `${safe}.json`);
+function parse<T>(raw: Buffer | null): T | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw.toString('utf8')) as T;
+  } catch {
+    return null;
+  }
 }
-
-const profilePath = () => path.join(config.paths.data, 'cooper-profile.json');
 
 // ---------------------------------------------------------------------------
 // Stories
@@ -31,62 +40,136 @@ export async function saveStory(
   bible: StoryBible,
   messages: StorytellerMessage[],
 ): Promise<void> {
-  await ensureDir(path.join(config.paths.data, 'stories'));
   const payload: SavedStory = {
     bible,
     messages,
     updatedAt: new Date().toISOString(),
   };
-  const file = storyPath(bible.storyId);
-  // Write-then-rename, so a crash mid-write can't corrupt a story she's
-  // been working on for an hour.
-  const tmp = `${file}.tmp`;
-  await fs.writeFile(tmp, JSON.stringify(payload, null, 2), 'utf8');
-  await fs.rename(tmp, file);
+
+  await blobs.write(
+    storyKey(bible.storyId),
+    JSON.stringify(payload, null, 2),
+    {
+      contentType: 'application/json',
+      // Duplicated into object metadata purely so listStories() can build the
+      // story picker without downloading every story in full.
+      metadata: {
+        storyId: bible.storyId,
+        title: bible.title,
+        beats: String(bible.beats.length),
+        updatedAt: payload.updatedAt,
+      },
+    },
+  );
 }
 
 export async function loadStory(storyId: string): Promise<SavedStory | null> {
-  try {
-    const raw = await fs.readFile(storyPath(storyId), 'utf8');
-    return JSON.parse(raw) as SavedStory;
-  } catch {
-    return null;
-  }
+  return parse<SavedStory>(await blobs.read(storyKey(storyId)));
 }
 
-export async function listStories(): Promise<
-  { storyId: string; title: string; beats: number; updatedAt: string }[]
-> {
-  const dir = path.join(config.paths.data, 'stories');
-  let names: string[];
-  try {
-    names = await fs.readdir(dir);
-  } catch {
-    return [];
-  }
+export interface StorySummary {
+  storyId: string;
+  title: string;
+  beats: number;
+  updatedAt: string;
+}
+
+export async function listStories(): Promise<StorySummary[]> {
+  const entries = (await blobs.list(STORIES_PREFIX)).filter((e) =>
+    e.key.endsWith('.json'),
+  );
 
   const stories = await Promise.all(
-    names
-      .filter((n) => n.endsWith('.json'))
-      .map(async (n) => {
-        try {
-          const raw = await fs.readFile(path.join(dir, n), 'utf8');
-          const saved = JSON.parse(raw) as SavedStory;
-          return {
-            storyId: saved.bible.storyId,
-            title: saved.bible.title,
-            beats: saved.bible.beats.length,
-            updatedAt: saved.updatedAt,
-          };
-        } catch {
-          return null;
-        }
-      }),
+    entries.map(async (entry): Promise<StorySummary | null> => {
+      const { storyId, title, beats, updatedAt } = entry.metadata;
+      if (storyId && title && beats && updatedAt) {
+        return { storyId, title, beats: Number(beats), updatedAt };
+      }
+
+      // No usable metadata: the local filesystem has nowhere to keep it, and
+      // objects written before it existed don't have it either. Fall back to
+      // reading the document, which is what this always used to do.
+      const saved = parse<SavedStory>(await blobs.read(entry.key));
+      if (!saved) return null;
+      return {
+        storyId: saved.bible.storyId,
+        title: saved.bible.title,
+        beats: saved.bible.beats.length,
+        updatedAt: saved.updatedAt,
+      };
+    }),
   );
 
   return stories
-    .filter((s): s is NonNullable<typeof s> => s !== null)
+    .filter((s): s is StorySummary => s !== null)
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+// ---------------------------------------------------------------------------
+// The starting template
+// ---------------------------------------------------------------------------
+
+/**
+ * On a laptop the template stays where it has always been — a JSON file in
+ * the source tree, so an edit made in /admin shows up as a reviewable diff
+ * and gets committed like anything else. In the cloud there is no source
+ * tree to write to, so it becomes an object in the bucket and the compiled
+ * copy is only the fallback for a bucket that has never been edited.
+ */
+export async function loadTemplate(): Promise<GrimwoodTemplate> {
+  if (!isCloudStorage) {
+    const raw = await fs
+      .readFile(config.paths.grimwoodTemplate, 'utf8')
+      .catch(() => null);
+    if (!raw) return GRIMWOOD_TEMPLATE;
+    try {
+      return JSON.parse(raw) as GrimwoodTemplate;
+    } catch {
+      return GRIMWOOD_TEMPLATE;
+    }
+  }
+
+  return parse<GrimwoodTemplate>(await blobs.read(TEMPLATE_KEY)) ?? GRIMWOOD_TEMPLATE;
+}
+
+export async function saveTemplate(template: GrimwoodTemplate): Promise<void> {
+  const json = JSON.stringify(template, null, 2);
+
+  if (!isCloudStorage) {
+    // Write-then-rename, same as story saves: a crash mid-write can't
+    // corrupt the template every new story depends on.
+    const tmp = `${config.paths.grimwoodTemplate}.tmp`;
+    await fs.writeFile(tmp, json, 'utf8');
+    await fs.rename(tmp, config.paths.grimwoodTemplate);
+    return;
+  }
+
+  await blobs.write(TEMPLATE_KEY, json, { contentType: 'application/json' });
+}
+
+// ---------------------------------------------------------------------------
+// Token ledger
+// ---------------------------------------------------------------------------
+
+export interface Spend {
+  day: string;
+  tokens: number;
+}
+
+/**
+ * The daily budget exists so a runaway loop can't quietly cost real money
+ * while a ten-year-old is left alone with it. On Cloud Run the process dies
+ * every time she stops playing, so a counter that lived only in memory would
+ * reset constantly and protect nothing.
+ */
+export async function loadSpend(): Promise<Spend | null> {
+  return parse<Spend>(await blobs.read(SPEND_KEY));
+}
+
+export async function saveSpend(spend: Spend): Promise<void> {
+  await blobs.write(SPEND_KEY, JSON.stringify(spend), {
+    contentType: 'application/json',
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -102,17 +185,14 @@ export const EMPTY_PROFILE: Profile = {
 };
 
 export async function loadProfile(): Promise<Profile> {
-  try {
-    const raw = await fs.readFile(profilePath(), 'utf8');
-    return { ...EMPTY_PROFILE, ...(JSON.parse(raw) as Profile) };
-  } catch {
-    return structuredClone(EMPTY_PROFILE);
-  }
+  const saved = parse<Profile>(await blobs.read(PROFILE_KEY));
+  return saved ? { ...EMPTY_PROFILE, ...saved } : structuredClone(EMPTY_PROFILE);
 }
 
 export async function saveProfile(profile: Profile): Promise<void> {
-  await ensureDir(config.paths.data);
-  await fs.writeFile(profilePath(), JSON.stringify(profile, null, 2), 'utf8');
+  await blobs.write(PROFILE_KEY, JSON.stringify(profile, null, 2), {
+    contentType: 'application/json',
+  });
 }
 
 /** Three consecutive correct uses and the owl stops mentioning a word. */
