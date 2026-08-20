@@ -120,7 +120,16 @@ class GcsBlobStore implements BlobStore {
   private bucketPromise: Promise<import('@google-cloud/storage').Bucket> | null =
     null;
 
-  constructor(private bucketName: string) {}
+  /**
+   * @param publicBaseUrl Set only when the bucket has deliberately been made
+   *   world-readable. Left undefined the store never hands out direct URLs and
+   *   every byte is served through the app, which is the right default for a
+   *   bucket holding a child's stories.
+   */
+  constructor(
+    private bucketName: string,
+    private publicBaseUrl?: string,
+  ) {}
 
   private bucket() {
     this.bucketPromise ??= import('@google-cloud/storage').then(
@@ -150,7 +159,10 @@ class GcsBlobStore implements BlobStore {
     await bucket.file(key).save(data, {
       contentType: opts.contentType,
       metadata: opts.metadata ? { metadata: opts.metadata } : undefined,
-      ...(opts.publicRead ? { public: true } : {}),
+      // `public: true` sets a per-object ACL, which uniform bucket-level
+      // access rejects outright. Only ever attempted for a bucket that has
+      // been deliberately opened up.
+      ...(opts.publicRead && this.publicBaseUrl ? { public: true } : {}),
     });
   }
 
@@ -170,7 +182,7 @@ class GcsBlobStore implements BlobStore {
   }
 
   publicUrl(key: string): string | null {
-    return `https://storage.googleapis.com/${this.bucketName}/${key}`;
+    return this.publicBaseUrl ? `${this.publicBaseUrl}/${key}` : null;
   }
 }
 
@@ -189,11 +201,14 @@ export const blobs: BlobStore = config.storageBucket
 
 /**
  * Synthesised audio, kept separate because it is a regenerable cache rather
- * than something Cooper would miss, and because in the cloud these objects
- * are public so the browser fetches them without waking the server.
+ * than something Cooper would miss.
+ *
+ * Served through the app by default. Setting PUBLIC_AUDIO_BASE_URL — only
+ * sensible against a bucket you have deliberately made world-readable — lets
+ * the browser fetch repeat plays straight from storage instead.
  */
 export const audioBlobs: BlobStore = config.storageBucket
-  ? new GcsBlobStore(config.storageBucket)
+  ? new GcsBlobStore(config.storageBucket, config.publicAudioBaseUrl)
   : new LocalBlobStore(config.paths.ttsCache);
 
 /** True when running against a bucket rather than the local filesystem. */

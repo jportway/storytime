@@ -49,12 +49,20 @@ Everything that used to be a file becomes an object in one GCS bucket. Set
 `STORAGE_BUCKET` and the server switches over; leave it unset and development
 is exactly as it was, on the local filesystem, with no cloud account needed.
 
+Region is `europe-north2` (Stockholm): 100% carbon-free energy at 3 gCO2eq/kWh
+— the cleanest grid Google runs — and Tier 1 pricing, so it is also among the
+cheapest. Latency from the UK is ~35ms rather than ~5ms from London, which is
+invisible next to a multi-second Opus call. London is both dirtier (79% CFE)
+and Tier 2, so it loses on every axis that matters here.
+
 ```bash
-BUCKET=storytime-cooper
-PROJECT=$(gcloud config get-value project)
+BUCKET=storytime-cooper-data
+REGION=europe-north2   # Stockholm: 100% carbon-free energy, and Tier 1 pricing
 
 # 1. One bucket for stories, the profile, the template and cached audio.
-gcloud storage buckets create gs://$BUCKET --location=europe-west2
+#    Uniform access: nothing in here is public, it holds a child's writing.
+gcloud storage buckets create gs://$BUCKET --location=$REGION \
+  --uniform-bucket-level-access
 
 # 2. Secrets. Never bake these into the image.
 for s in ANTHROPIC_API_KEY ELEVENLABS_API_KEY APP_PASSWORD ADMIN_PASSWORD; do
@@ -68,7 +76,7 @@ STORAGE_BUCKET=$BUCKET npm run seed-audio
 
 # 4. Deploy. Cloud Build builds the Dockerfile remotely — no local Docker.
 gcloud run deploy storytime --source . \
-  --region=europe-west2 --allow-unauthenticated \
+  --region=$REGION --allow-unauthenticated \
   --max-instances=1 --timeout=600 --memory=512Mi --cpu-boost \
   --set-env-vars=STORAGE_BUCKET=$BUCKET \
   --set-secrets=ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest,\

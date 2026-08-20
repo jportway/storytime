@@ -35,6 +35,13 @@ export const config = {
    */
   storageBucket: process.env.STORAGE_BUCKET,
 
+  /**
+   * Base URL for publicly-readable audio objects. Unset by default: the
+   * bucket holds Cooper's stories and uses uniform bucket-level access, so
+   * nothing in it is public and all audio is served through the app.
+   */
+  publicAudioBaseUrl: process.env.PUBLIC_AUDIO_BASE_URL,
+
   auth: {
     /** Opens the game. Unset on a laptop means no gate at all. */
     appPassword: process.env.APP_PASSWORD,
