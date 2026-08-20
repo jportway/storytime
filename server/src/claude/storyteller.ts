@@ -1,7 +1,8 @@
 import type Anthropic from '@anthropic-ai/sdk';
-import type { Panel, StoryBible } from '@storytime/shared';
+import type { Panel, StoryBible, StoryPlan } from '@storytime/shared';
 import { config } from '../config.js';
 import { serializeBible, serializeRecentBeats } from '../bible.js';
+import { serializePlanForReground, serializePlanNote } from '../plan.js';
 import {
   anthropic,
   assertWithinBudget,
@@ -24,6 +25,8 @@ export interface BeatResult {
   text: string;
   /** True when the model declined. The UI must handle this in character. */
   redirected: boolean;
+  /** The beat resolved the story rather than forking. */
+  landing: boolean;
 }
 
 export interface StreamCallbacks {
@@ -78,13 +81,26 @@ export class Storyteller {
     this.bible = bible;
   }
 
-  /** Append Cooper's direction. Already spelling-normalised by the caller. */
-  addDirection(direction: string): void {
+  /**
+   * Append Cooper's direction. Already spelling-normalised by the caller.
+   *
+   * The director's stage note rides along in the same message rather than
+   * arriving as one of its own, and it goes at the *tail*. That matters more
+   * than it looks: this conversation is append-only precisely so the prompt
+   * cache can reuse the whole prefix every turn, and anything that edits an
+   * earlier message throws that away on every beat of every story.
+   *
+   * Most turns the note is empty — when she is driving, the storyteller sees
+   * exactly what it saw before any of this existed.
+   */
+  addDirection(direction: string, plan?: StoryPlan | null): void {
+    const parts = [`Cooper says what happens next:\n\n"${direction}"`];
+    const note = serializePlanNote(plan);
+    if (note) parts.push('', '---', '', note);
+
     this.messages.push({
       role: 'user',
-      content: [
-        { type: 'text', text: `Cooper says what happens next:\n\n"${direction}"` },
-      ],
+      content: [{ type: 'text', text: parts.join('\n') }],
     });
   }
 
@@ -136,7 +152,14 @@ export class Storyteller {
     // rather than showing a ten-year-old an error. The caller turns this
     // into an owl line, not a dialog box.
     if (message.stop_reason === 'refusal') {
-      return { panels, fork: '', text, chapterTitle: null, redirected: true };
+      return {
+        panels,
+        fork: '',
+        text,
+        chapterTitle: null,
+        redirected: true,
+        landing: false,
+      };
     }
 
     this.messages.push({ role: 'assistant', content: text });
@@ -151,6 +174,7 @@ export class Storyteller {
       text,
       chapterTitle: parser.chapterTitle,
       redirected: false,
+      landing: tail.landing,
     };
   }
 
@@ -173,7 +197,10 @@ export class Storyteller {
         serializeBible(this.bible),
         '',
         serializeRecentBeats(this.bible),
-      ].join('\n'),
+        serializePlanForReground(this.bible.plan),
+      ]
+        .filter(Boolean)
+        .join('\n'),
     } as StorytellerMessage);
   }
 

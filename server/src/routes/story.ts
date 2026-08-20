@@ -95,8 +95,12 @@ storyRouter.post('/stories/:storyId/beat', wrap(async (req, res) => {
       raw,
       corrected,
       chapterTitle: result.chapterTitle,
+      landing: result.landing,
     });
 
+    // The closing line is only known to be a landing once the stream ends, so
+    // unlike `chapter` this cannot be sent ahead of the panels.
+    if (result.landing) send({ type: 'landing', text: result.fork });
     send({ type: 'beat-complete', beat });
     send({ type: 'bible-updated', bible: session.bible, whatsNew });
 

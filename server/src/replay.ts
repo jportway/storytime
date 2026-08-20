@@ -102,6 +102,7 @@ async function main(): Promise<void> {
       raw,
       corrected: raw ? session.normalise(raw) : null,
       chapterTitle: result.chapterTitle,
+      landing: result.landing,
     });
     if (whatsNew.length) console.log(`   [bible] ${whatsNew.join(' | ')}`);
   }

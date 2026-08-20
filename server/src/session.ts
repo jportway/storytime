@@ -7,6 +7,8 @@ import {
 } from '@storytime/shared';
 import { applyDelta, properNouns } from './bible.js';
 import { extractDelta } from './claude/archivist.js';
+import { planNext } from './claude/director.js';
+import { applyPlanUpdate, dealArc } from './plan.js';
 import { Storyteller } from './claude/storyteller.js';
 import { loadProfile, loadStory, loadTemplate, saveStory } from './store.js';
 
@@ -27,6 +29,11 @@ export class Session {
     // is picked up by the very next new story without a restart — which a
     // deployed server never gets.
     const bible = makeGrimwoodBible(storyId, await loadTemplate());
+    // Dealt before the opening beat so the very first fork is already aimed.
+    // A template with no arcs deals nothing, and the story runs exactly as it
+    // did before any of this existed.
+    bible.plan = dealArc(bible.arcs, 0);
+    bible.arcsCompleted = 0;
     const checker = await buildChecker(bible);
     return new Session(bible, new Storyteller(bible), checker);
   }
@@ -64,7 +71,10 @@ export class Session {
   }
 
   addDirection(corrected: string): void {
-    this.storyteller.addDirection(corrected);
+    // The plan travels with her direction rather than being injected
+    // separately, so the storyteller sees one message per turn and the
+    // conversation stays append-only. See Storyteller.addDirection.
+    this.storyteller.addDirection(corrected, this.bible.plan);
   }
 
   getStoryteller(): Storyteller {
@@ -79,12 +89,14 @@ export class Session {
     raw: string | null;
     corrected: string | null;
     chapterTitle: string | null;
+    landing?: boolean;
   }): Promise<{ beat: Beat; whatsNew: string[] }> {
     const beat: Beat = {
       n: this.bible.beats.length + 1,
       panels: opts.panels,
       fork: opts.fork,
       chapterTitle: opts.chapterTitle,
+      landing: opts.landing ? true : undefined,
       cooperDirection: opts.corrected,
       cooperDirectionRaw: opts.raw,
       cooperWordCount: opts.raw
@@ -94,11 +106,14 @@ export class Session {
     };
     this.bible.beats.push(beat);
 
-    const delta = await extractDelta(
-      this.bible,
-      opts.beatText,
-      opts.corrected,
-    );
+    // Both read the beat that was just written and neither needs the other's
+    // output, so they go together. The archivist already gates the response —
+    // running the director after it rather than beside it would add its whole
+    // latency to the time Cooper spends unable to type.
+    const [delta, planUpdate] = await Promise.all([
+      extractDelta(this.bible, opts.beatText, opts.corrected),
+      planNext(this.bible, opts.beatText, opts.corrected),
+    ]);
 
     let whatsNew: string[] = [];
     if (delta) {
@@ -110,8 +125,32 @@ export class Session {
       this.checker.addProperNouns(this.storyNames);
     }
 
+    if (this.bible.plan) {
+      this.bible.plan = applyPlanUpdate(this.bible.plan, planUpdate, beat.n);
+      this.storyteller.setBible(this.bible);
+    }
+
     await saveStory(this.bible, this.storyteller.getMessages());
     return { beat, whatsNew };
+  }
+
+  /**
+   * She chose to keep going after the story landed. Deal a fresh shape.
+   *
+   * The arc just finished is avoided, because two rescues in a row read as
+   * repetition even when each is fine on its own. The storyteller is told
+   * nothing directly — it finds out by being handed a new destination, and
+   * opens a chapter of its own accord because the story has turned a corner.
+   */
+  continuePastLanding(): void {
+    const finished = this.bible.plan?.arcId ?? null;
+    this.bible.arcsCompleted = (this.bible.arcsCompleted ?? 0) + 1;
+    this.bible.plan = dealArc(
+      this.bible.arcs,
+      this.bible.beats.length,
+      finished,
+    );
+    this.storyteller.setBible(this.bible);
   }
 }
 
