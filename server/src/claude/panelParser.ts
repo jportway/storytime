@@ -17,12 +17,17 @@ import type { Panel } from '@storytime/shared';
  *   TED: "Dialogue."
  *   SFX: KA-BONK!
  *   [FORK] The single closing sentence.
+ *
+ * A beat that ends the story closes with `[LANDING]` in place of `[FORK]`:
+ * same shape, but it resolves rather than leaving her on a cliff, and it is
+ * what puts "The End" in front of her.
  */
 export class PanelParser {
   private buffer = '';
   private currentLines: string[] = [];
   private started = false;
   private forkText: string | null = null;
+  private landed = false;
   private chapter: string | null = null;
   private chapterEmitted = false;
 
@@ -36,6 +41,11 @@ export class PanelParser {
   /** The chapter this beat opens, if it opens one. */
   get chapterTitle(): string | null {
     return this.chapter;
+  }
+
+  /** True when this beat resolved the story instead of forking. */
+  get isLanding(): boolean {
+    return this.landed;
   }
 
   /** Feed a chunk. Returns any panels completed by this chunk. */
@@ -56,7 +66,7 @@ export class PanelParser {
   }
 
   /** Flush the tail. Call once the stream ends. */
-  end(): { panels: Panel[]; fork: string | null } {
+  end(): { panels: Panel[]; fork: string | null; landing: boolean } {
     const panels: Panel[] = [];
 
     if (this.buffer.trim()) {
@@ -68,7 +78,7 @@ export class PanelParser {
     const last = this.flushCurrent();
     if (last) panels.push(last);
 
-    return { panels, fork: this.forkText };
+    return { panels, fork: this.forkText, landing: this.landed };
   }
 
   private consumeLine(rawLine: string): Panel | null {
@@ -96,9 +106,14 @@ export class PanelParser {
       return finished;
     }
 
-    if (/^\[FORK\]/i.test(line)) {
+    // [LANDING] is [FORK] that resolves. Keeping the closing line in the same
+    // field means every reader downstream — the store, the client, the
+    // archivist — needs no idea that landings exist.
+    const closing = /^\[(FORK|LANDING)\]/i.exec(line);
+    if (closing) {
       const finished = this.flushCurrent();
-      this.forkText = line.replace(/^\[FORK\]/i, '').trim();
+      this.landed = closing[1]!.toUpperCase() === 'LANDING';
+      this.forkText = line.replace(/^\[(FORK|LANDING)\]/i, '').trim();
       this.started = false;
       return finished;
     }
@@ -168,13 +183,15 @@ export function parseBeatText(text: string): {
   panels: Panel[];
   fork: string | null;
   chapterTitle: string | null;
+  landing: boolean;
 } {
   const parser = new PanelParser();
   const streamed = parser.push(text.endsWith('\n') ? text : text + '\n');
-  const { panels, fork } = parser.end();
+  const { panels, fork, landing } = parser.end();
   return {
     panels: [...streamed, ...panels],
     fork,
     chapterTitle: parser.chapterTitle,
+    landing,
   };
 }

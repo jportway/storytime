@@ -136,3 +136,57 @@ describe('chapter markers', () => {
     expect(panels).toHaveLength(0);
   });
 });
+
+describe('landing', () => {
+  it('treats [LANDING] as the closing line and flags the beat', () => {
+    const result = parseBeatText(
+      [
+        '[PANEL]',
+        'They carried the cake up the path.',
+        'TED: "We actually did it."',
+        '[LANDING] The candles were crooked, and nobody minded at all.',
+      ].join('\n'),
+    );
+
+    expect(result.landing).toBe(true);
+    expect(result.fork).toBe(
+      'The candles were crooked, and nobody minded at all.',
+    );
+    expect(result.panels).toHaveLength(1);
+  });
+
+  it('leaves an ordinary beat unlanded', () => {
+    const result = parseBeatText(
+      ['[PANEL]', 'Something moved.', '[FORK] The lid creaked.'].join('\n'),
+    );
+    expect(result.landing).toBe(false);
+    expect(result.fork).toBe('The lid creaked.');
+  });
+
+  it('ends the beat, so trailing chatter is still dropped', () => {
+    const result = parseBeatText(
+      [
+        '[PANEL]',
+        'Home at last.',
+        '[LANDING] And that was that.',
+        'THE END',
+        'Would you like another story?',
+      ].join('\n'),
+    );
+    expect(result.fork).toBe('And that was that.');
+    expect(result.panels).toHaveLength(1);
+  });
+
+  it('does not care about chunk boundaries', () => {
+    const text = '[PANEL]\nDone.\n[LANDING] All quiet.\n';
+    for (const size of [1, 3, 7]) {
+      const parser = new PanelParser();
+      for (let i = 0; i < text.length; i += size) {
+        parser.push(text.slice(i, i + size));
+      }
+      const { fork, landing } = parser.end();
+      expect(landing).toBe(true);
+      expect(fork).toBe('All quiet.');
+    }
+  });
+});
