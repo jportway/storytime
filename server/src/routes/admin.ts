@@ -15,7 +15,7 @@ export const adminRouter = Router();
  * opens the game — see requireAdmin in auth.ts.
  */
 
-adminRouter.get('/admin/bible/:storyId', wrap(async (req, res) => {
+adminRouter.get('/bible/:storyId', wrap(async (req, res) => {
   const session = await getSession(req.params.storyId!);
   if (!session) {
     res.status(404).json({ error: 'No such story' });
@@ -40,7 +40,7 @@ function isValidBible(body: unknown): body is StoryBible {
   );
 }
 
-adminRouter.put('/admin/bible/:storyId', wrap(async (req, res) => {
+adminRouter.put('/bible/:storyId', wrap(async (req, res) => {
   const storyId = req.params.storyId!;
   const session = await getSession(storyId);
   if (!session) {
@@ -81,11 +81,11 @@ function isValidTemplate(body: unknown): body is GrimwoodTemplate {
   );
 }
 
-adminRouter.get('/admin/template', wrap(async (_req, res) => {
+adminRouter.get('/template', wrap(async (_req, res) => {
   res.json(await loadTemplate());
 }));
 
-adminRouter.put('/admin/template', wrap(async (req, res) => {
+adminRouter.put('/template', wrap(async (req, res) => {
   if (!isValidTemplate(req.body)) {
     res.status(400).json({ error: 'Malformed template' });
     return;

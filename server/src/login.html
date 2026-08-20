@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Grimwood</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --ink: #f2ede4;
+        --dim: #9b9184;
+        --edge: #2f3a33;
+        --field: #17201b;
+        --accent: #8fc08a;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 1.5rem;
+        background: radial-gradient(circle at 50% 0%, #1d2721 0%, #0e1411 70%);
+        color: var(--ink);
+        font: 16px/1.5 ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui,
+          sans-serif;
+      }
+      form {
+        width: min(23rem, 100%);
+        text-align: center;
+      }
+      .owl {
+        font-size: 3.5rem;
+        line-height: 1;
+        margin-bottom: 0.75rem;
+      }
+      h1 {
+        margin: 0 0 0.35rem;
+        font-size: 1.5rem;
+        letter-spacing: 0.01em;
+      }
+      p {
+        margin: 0 0 1.5rem;
+        color: var(--dim);
+        font-size: 0.95rem;
+      }
+      input {
+        width: 100%;
+        padding: 0.85rem 1rem;
+        font: inherit;
+        color: var(--ink);
+        background: var(--field);
+        border: 1px solid var(--edge);
+        border-radius: 0.7rem;
+        text-align: center;
+      }
+      input:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      button {
+        width: 100%;
+        margin-top: 0.75rem;
+        padding: 0.85rem 1rem;
+        font: inherit;
+        font-weight: 600;
+        color: #10201a;
+        background: var(--accent);
+        border: 0;
+        border-radius: 0.7rem;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+      .error {
+        min-height: 1.4rem;
+        margin-top: 0.85rem;
+        color: #e8a0a0;
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <form id="form">
+      <div class="owl" aria-hidden="true">🦉</div>
+      <h1 id="heading">Grimwood</h1>
+      <p id="sub">Frank wants the password.</p>
+      <input
+        id="password"
+        type="password"
+        autocomplete="current-password"
+        placeholder="Password"
+        aria-label="Password"
+        autofocus
+      />
+      <button id="submit" type="submit">Come in</button>
+      <div class="error" id="error" role="alert"></div>
+    </form>
+
+    <script>
+      // One page serves both gates; which one is decided by the path it was
+      // served from, so there is no way to ask for admin from the game form.
+      var scope = location.pathname.indexOf('/admin') === 0 ? 'admin' : 'app';
+      var next = new URLSearchParams(location.search).get('next');
+
+      if (scope === 'admin') {
+        document.getElementById('heading').textContent = 'Bible editor';
+        document.getElementById('sub').textContent = 'Admin password.';
+      }
+
+      var form = document.getElementById('form');
+      var error = document.getElementById('error');
+      var submit = document.getElementById('submit');
+
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+        error.textContent = '';
+        submit.disabled = true;
+
+        fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            scope: scope,
+            password: document.getElementById('password').value,
+          }),
+        })
+          .then(function (res) {
+            if (res.ok) {
+              location.replace(next || (scope === 'admin' ? '/admin/' : '/'));
+              return;
+            }
+            submit.disabled = false;
+            error.textContent =
+              res.status === 401
+                ? "That's not it. Try again."
+                : 'Something went wrong. Try again.';
+          })
+          .catch(function () {
+            submit.disabled = false;
+            error.textContent = 'Could not reach the server.';
+          });
+      });
+    </script>
+  </body>
+</html>

@@ -16,7 +16,19 @@ export interface Credit {
   beatsDirected: number;
 }
 
+/**
+ * A session that has expired should send her back to the login page, not
+ * surface a raw 401 as an error in the middle of a story. Deployed only —
+ * on a laptop there is no gate and this never fires.
+ */
+function bounceIfSignedOut(res: Response): void {
+  if (res.status !== 401) return;
+  const here = window.location.pathname + window.location.search;
+  window.location.replace(`/login?next=${encodeURIComponent(here)}`);
+}
+
 async function json<T>(res: Response): Promise<T> {
+  bounceIfSignedOut(res);
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
   return res.json() as Promise<T>;
 }
@@ -82,6 +94,7 @@ export async function checkBeforeSend(body: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+  bounceIfSignedOut(res);
   if (!res.ok) return [];
   const { issues } = await res.json();
   return Array.isArray(issues) ? issues : [];
@@ -106,6 +119,7 @@ export async function streamBeat(
     signal,
   });
 
+  bounceIfSignedOut(res);
   if (!res.body) throw new Error('No response body');
 
   const reader = res.body.getReader();

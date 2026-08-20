@@ -7,7 +7,7 @@
     "dev": "tsx watch --conditions=development src/index.ts",
     "start": "node dist/index.js",
     "build": "tsc -b && npm run copy-assets",
-    "copy-assets": "rm -rf dist/prompts dist/admin && mkdir -p dist && cp -R src/prompts src/admin dist/",
+    "copy-assets": "rm -rf dist/prompts dist/admin && mkdir -p dist && cp -R src/prompts src/admin dist/ && cp src/login.html dist/",
     "replay": "tsx --conditions=development src/replay.ts",
     "seed-audio": "tsx --conditions=development src/seedAudio.ts"
   },
