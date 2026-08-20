@@ -424,9 +424,9 @@ export function App() {
       <div className="welcome">
         <div className="welcome-owl" aria-hidden="true" />
         <h1>Storytime</h1>
-        <p className="welcome-sub">You're going to write a comic book.</p>
+        <p className="welcome-sub">You're going to write a book.</p>
         <button className="start" onClick={() => void start()}>
-          Start a Grimwood story
+          Start a Cooperworld story
         </button>
         <p className="welcome-foot">
           The owl will read along and help with the hard words.
