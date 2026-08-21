@@ -249,6 +249,14 @@ export function updateProfile(
 
   for (const f of opts.findings) {
     const target = f.suggestion.toLowerCase();
+
+    // A "correction" that changes nothing is not a mistake she made. Without
+    // this, a checker that suggests a word to itself files the word as a
+    // misspelling of itself — which happened to "looked" on Cooper's first
+    // real story, and would have had the owl offering to help with a word
+    // she had spelled correctly, permanently.
+    if (target === f.word.toLowerCase()) continue;
+
     erroredThisTurn.add(target);
 
     if (f.kind === 'reversal') {

@@ -100,3 +100,31 @@ describe('updateProfile', () => {
     expect(profile).toEqual(before);
   });
 });
+
+describe('updateProfile — no-op corrections', () => {
+  it('ignores a correction that changes nothing', () => {
+    // The local checker can hand back a finding whose suggestion is the word
+    // itself. Filed as-is it becomes a misspelling of itself and the owl
+    // starts helping with a word she got right.
+    const next = updateProfile(fresh(), {
+      raw: 'Ted looked up',
+      corrected: 'Ted looked up',
+      findings: [{ word: 'looked', suggestion: 'looked', kind: 'spelling' }],
+    });
+
+    expect(next.misspellings).toEqual({});
+    expect(next.mastered).toEqual([]);
+    expect(next.totals.beatsDirected).toBe(1);
+  });
+
+  it('still records a correction that does change something', () => {
+    const next = updateProfile(fresh(), {
+      raw: 'ted hides unber the deb',
+      corrected: 'ted hides under the bed',
+      findings: [{ word: 'deb', suggestion: 'bed', kind: 'reversal' }],
+    });
+
+    expect(next.misspellings.bed?.wrongForms).toEqual(['deb']);
+    expect(Object.keys(next.reversals)).toContain('b/d');
+  });
+});
