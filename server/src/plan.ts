@@ -26,18 +26,32 @@ import type {
 } from '@storytime/shared';
 
 /**
+ * Roughly how long a story wants to be. A very loose guide, never a deadline.
+ *
+ * Ten turns turned out to be too short to feel like a story rather than an
+ * anecdote. Fifteen to twenty is comfortable, and nothing here should ever
+ * hurry a story that is going well — the ceiling below is a backstop against
+ * idling, not a pace to hit.
+ */
+export const TARGET_BEATS = 16;
+
+/**
  * How long a phase may last before it is moved along regardless.
  *
- * Without this the story idles: each turn looks locally like the phase is not
- * quite finished, and five phases of "not quite yet" is how a ten-beat story
- * becomes a thirty-beat one. In practice the director says a phase is
- * finished rarely enough that this ceiling, not its judgement, is what sets
- * the pace — so with five phases it is also what makes TARGET_BEATS true.
+ * Derived from the arc rather than fixed, because arcs are authored in
+ * /admin and do not all have the same number of phases — the Cooperworld
+ * party arc has eight where the seeded ones had five. A fixed number would
+ * silently mean "eight phases is twice as long a story as five", which is an
+ * odd thing for the phase count to control.
+ *
+ * This is only a backstop. Without it a story idles: every turn looks locally
+ * like the phase is not quite finished, and enough "not quite yet"s is how a
+ * story stops arriving anywhere at all. The director advancing a phase on its
+ * own judgement is the normal path and gives the shorter, brisker stories.
  */
-const MAX_BEATS_IN_PHASE = 2;
-
-/** Roughly how long an arc should run. Used for the note, not enforced. */
-export const TARGET_BEATS = 10;
+function maxBeatsInPhase(phaseCount: number): number {
+  return Math.max(2, Math.ceil(TARGET_BEATS / Math.max(1, phaseCount)));
+}
 
 /** The mutable slice of a plan — exactly what the director may return. */
 export interface PlanUpdate {
@@ -119,7 +133,7 @@ export function applyPlanUpdate(
 
   // Advance on the director's say-so, or because the phase has run long. One
   // step at a time: skipping a phase loses the shape the arc exists to give.
-  const stalled = next.beatsInPhase >= MAX_BEATS_IN_PHASE;
+  const stalled = next.beatsInPhase >= maxBeatsInPhase(next.phases.length);
   if ((update?.phaseComplete || stalled) && next.phase < lastPhase) {
     next.phase += 1;
     next.beatsInPhase = 0;
@@ -210,11 +224,12 @@ export function serializePlanNote(plan: StoryPlan | null | undefined): string {
   if (plan.nextMove.instrument === 'none' || !plan.nextMove.intent) return '';
 
   const phase = plan.phases[plan.phase];
-  const beat = plan.dealtAtBeat + plan.phase * 2 + plan.beatsInPhase;
 
   const lines = [
     '[Stage note — not part of the story. Never repeat any of this to Cooper.]',
-    `Phase: ${phase?.name ?? 'the end'} (about beat ${beat} of ${TARGET_BEATS}).`,
+    // Position in the shape, deliberately not a beat count. "Beat 6 of 10"
+    // reads as a deadline and made the storyteller start closing things down.
+    `Phase: ${phase?.name ?? 'the end'} (${plan.phase + 1} of ${plan.phases.length}). No hurry.`,
   ];
 
   if (plan.landing) {

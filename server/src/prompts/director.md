@@ -24,7 +24,9 @@ Set it to false when she gave you very little to go on: a couple of words, a shr
 
 ## What you report
 
-**`phaseComplete`** — has this phase of the arc done its work? You are given the phase and what it is for. Say true when the beat you just read accomplished it, false otherwise. Do not stretch: a phase that is mostly done is not done. It will be moved along anyway if it overruns, so there is no need to force it.
+**`phaseComplete`** — has this phase of the arc done its work? You are given the phase and what it is for. Say true when the beat you just read accomplished it, false otherwise.
+
+Do not force it and do not pad it. A phase that is mostly done is not done, and a story that is going well should be allowed to keep going — around sixteen beats is normal here and twenty is perfectly fine. There is no prize for finishing early and a rushed ending is worse than a long middle. Equally, a phase whose work is plainly finished should be allowed to end; repeating it is its own kind of stalling.
 
 **`nowPlayed`** — the ids of any trouble or inventions that this beat actually used up. Only list something that genuinely appeared. A card mentioned in passing has not been played.
 

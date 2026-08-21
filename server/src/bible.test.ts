@@ -159,9 +159,29 @@ describe('applyDelta', () => {
   });
 
   it('resolves an open thread', () => {
+    // Opens its own thread rather than reaching for one in the template.
+    // This used to name a template thread by id and broke the moment the
+    // template was edited in /admin — which is a thing that is supposed to
+    // happen, and not something a test of applyDelta should care about.
     const bible = makeGrimwoodBible('t7');
-    const next = applyDelta(
+    const opened = applyDelta(
       bible,
+      {
+        ...emptyDelta(),
+        newThreads: [
+          {
+            id: 'the-hidden-tail',
+            question: 'What happened to the tail?',
+            status: 'open',
+            createdBy: 'ai',
+          },
+        ],
+      },
+      1,
+    ).bible;
+
+    const next = applyDelta(
+      opened,
       {
         ...emptyDelta(),
         resolvedThreads: [

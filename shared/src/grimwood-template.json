@@ -7,7 +7,7 @@
     "a bit gross",
     "secretly warm"
   ],
-  "premise": "All of Cooper's imaginary friends are gathering to plan her birthday party, but they come from different imaginary universes and can never agree on anything. Her birthday is the 21st of August and they don't have long to prepare. As usual everyone has been too chaotic to organise anything in time, so they are in a last-minute panic.",
+  "premise": "All of Cooper's imaginary friends are gathering to plan her birthday party, but they come from different imaginary universes and can never agree on anything. Her birthday is the 21st of August and they don't have long to prepare. As usual everyone has been too chaotic to organise anything in time, so they are in a last-minute panic. They go on a quest to find the perfect thing to give her for her birthday (possibly a mythically wonderfual cake), but fail (possibly because through all their misadventures the cake gets too damaged and nibbled by the characters) but in the end they get back to grimwood in time for the party and realise that all cooper really wants is to love them and have them love her back",
   "worldRules": [],
   "characters": [
     {
@@ -575,7 +575,7 @@
     {
       "id": "time-toilet",
       "name": "The time toilet",
-      "description": "The time toilet is actually a circular trampoline, but in Cooper's imaginative world it becomes a time machine that can take you any time or place. During the time travelling process everyone is spun around and bounces on the trampoline in a chaotic way. Unfortunately, the time toilet has a LOT of buttons inside and no one really knows how it works, so very often people just press a button by mistake and end up in the Jurassic era, or Henry the 8ths court. ",
+      "description": "The time toilet is actually a circular trampoline in the garden of Cooper's house, but in Cooper's imaginative world it becomes a time machine that can take you any time or place. During the time travelling process everyone is spun around and bounces on the trampoline in a chaotic way. Unfortunately, the time toilet has a LOT of buttons inside and no one really knows how it works, so very often people just press a button by mistake and end up in the Jurassic era, or Henry the 8ths court. ",
       "appearance": "",
       "createdBy": "ai",
       "connectsTo": [
@@ -613,19 +613,31 @@
       "ownerId": "ted",
       "powers": [],
       "status": "intact"
+    },
+    {
+      "id": "cake",
+      "name": "Birthday cake",
+      "description": "a magnificant cake for Cooper's party. It is glorious, but extremely delicate because of all the cream and fruit and chocolate etc. It is very unlikley to make it to the party in one piece",
+      "appearance": "creamy, fruity, chocolaty - the apex cake",
+      "createdBy": "ai",
+      "powers": [
+        "the less strong willed and more chaotic characters find it hard to resist taking nibbles"
+      ],
+      "status": "intact",
+      "placeId": "big-city"
     }
   ],
   "threads": [
     {
-      "id": "buttons-revenge",
-      "question": "What will Princess Buttons do when she finds them?",
+      "id": "new-thread",
+      "question": "Where is rainbow cat - Sharon had a friend called Rainbow Cat, but no one has seen her for weeks",
       "opened": 0,
       "status": "open",
       "createdBy": "ai"
     },
     {
-      "id": "the-hidden-tail",
-      "question": "What happens when everyone finds out Ted kept the tail?",
+      "id": "new-thread-2",
+      "question": "How will the Grimwood animals get Cooper's pary organised in time",
       "opened": 0,
       "status": "open",
       "createdBy": "ai"
@@ -633,110 +645,41 @@
   ],
   "arcs": [
     {
-      "id": "plan-goes-wrong",
-      "name": "The plan goes wrong",
-      "destination": "the thing they were trying to make happen happens anyway, but nothing like the way they planned it, and it is better for that",
-      "phases": [
-        {
-          "name": "the plan",
-          "intent": "establish what they are trying to pull off and who is counting on it"
-        },
-        {
-          "name": "first crack",
-          "intent": "one small thing goes wrong and is patched over too easily"
-        },
-        {
-          "name": "falling apart",
-          "intent": "the patch fails and takes something bigger with it"
-        },
-        {
-          "name": "the scramble",
-          "intent": "everyone improvises at once, badly, and someone has to choose what to save"
-        },
-        {
-          "name": "it happens anyway",
-          "intent": "the thing arrives in an unrecognisable and better form"
-        }
-      ]
-    },
-    {
-      "id": "secret-gets-out",
-      "name": "A secret gets out",
-      "destination": "the secret is out in the open, and the friendship turns out to be stronger than the thing that was hidden",
-      "phases": [
-        {
-          "name": "setup",
-          "intent": "show the secret mattering quietly, without naming it"
-        },
-        {
-          "name": "the crack",
-          "intent": "something makes keeping it hidden suddenly harder"
-        },
-        {
-          "name": "unravel",
-          "intent": "someone else learns part of it and does not keep it well"
-        },
-        {
-          "name": "reckoning",
-          "intent": "it comes out fully, at the worst possible moment, in front of the wrong person"
-        },
-        {
-          "name": "mend",
-          "intent": "the person who was wronged decides what happens next"
-        }
-      ]
-    },
-    {
-      "id": "someone-lost",
-      "name": "Someone needs fetching",
-      "destination": "the one who was stuck is brought home by whoever was least sure they could do it",
-      "phases": [
-        {
-          "name": "ordinary",
-          "intent": "an ordinary day with one person conspicuously absent"
-        },
-        {
-          "name": "the alarm",
-          "intent": "it becomes clear someone is genuinely in trouble"
-        },
-        {
-          "name": "the wrong way",
-          "intent": "a first confident attempt fails and makes things worse"
-        },
-        {
-          "name": "real danger",
-          "intent": "the rescue costs something and the timid one has to lead"
-        },
-        {
-          "name": "home",
-          "intent": "back safe, changed, and someone gets quiet credit"
-        }
-      ]
-    },
-    {
-      "id": "something-arrives",
-      "name": "Something arrives",
-      "destination": "the newcomer belongs here, and the group has had to change shape to make room",
+      "id": "new-arc",
+      "name": "Party problems",
+      "destination": "Hatsune and Rainbow Cat are found. Everyone realises that the only thing they really need for Cooper's party is the love they share with each other and Cooper.",
       "phases": [
         {
           "name": "before",
-          "intent": "the group comfortable and closed, pleased with itself"
+          "intent": "everyone in Grimwood is genially squabbling as usual. "
         },
         {
-          "name": "arrival",
-          "intent": "something or someone turns up that does not fit"
+          "name": "panic",
+          "intent": "They they realise they only have a few hours until Cooper's party and panic"
         },
         {
           "name": "friction",
-          "intent": "the group tries to carry on as if nothing has changed"
+          "intent": "no one can agree what they should get cooper for her birthday party, and being woodland creatures they realise they have no money anyway"
         },
         {
-          "name": "the test",
-          "intent": "the newcomer is the only one who can do the needed thing"
+          "name": "arrival",
+          "intent": "A stranger (Hatsune) arrives somehow, but there is trouble understanding her. Everyone is too busy getting ready for the party to pay attention to her"
         },
         {
-          "name": "room made",
-          "intent": "the group rearranges itself, not entirely graciously"
+          "name": "journey",
+          "intent": "looking for the perfect gift the animals go on a jouney to cooper's bedroom and the time toilet, picking up extra companions along the way"
+        },
+        {
+          "name": "setbacks",
+          "intent": "things go wrong in the time toilet and they have to give up looking for the mythical gift and struggle to return to grimwood forest"
+        },
+        {
+          "name": "return",
+          "intent": "hatsune solves a problem no one else can and enables them to get back to grimwood"
+        },
+        {
+          "name": "party",
+          "intent": "they arrive just in time for for Cooper's party - hatsune is the hero, cooper arrives and everyone celebrates their love for each other"
         }
       ]
     }
@@ -746,71 +689,111 @@
       "id": "buttons-knows",
       "text": "Princess Buttons works out who has been keeping her tail all this time.",
       "suits": [
-        "the crack",
-        "unravel",
-        "reckoning"
+        "friction",
+        "setbacks"
       ]
     },
     {
       "id": "tail-found",
       "text": "Ted's hiding place is found by somebody who is very bad at keeping quiet.",
       "suits": [
-        "the crack",
-        "unravel"
+        "friction",
+        "setbacks",
+        "journey"
       ]
     },
     {
       "id": "time-toilet-misfire",
       "text": "Somebody leans on the wrong button in the time toilet and the whole scene lands somewhere it should not be.",
-      "suits": []
+      "suits": [
+        "journey",
+        "setbacks",
+        "return"
+      ]
     },
     {
       "id": "rainbow-cat-waiting",
       "text": "Rainbow Cat is still tangled in the Deep Wood, and has been for a while, and nobody has gone to get her.",
-      "suits": []
+      "suits": [
+        "friction",
+        "arrival",
+        "journey",
+        "return"
+      ]
     },
     {
       "id": "henry-proposes",
       "text": "Henry the eighth arrives and announces a wedding nobody agreed to.",
-      "suits": []
+      "suits": [
+        "journey",
+        "setbacks",
+        "return"
+      ]
     },
     {
       "id": "princess-in-charge",
       "text": "The Spoiled Princess demands to be in charge, and — briefly, disastrously — everyone lets her.",
-      "suits": []
+      "suits": [
+        "journey",
+        "setbacks",
+        "return"
+      ]
     },
     {
       "id": "hatsune-untranslated",
       "text": "Hatsune has something urgent to say and only Frank can translate it. Frank is not here.",
-      "suits": []
+      "suits": [
+        "arrival",
+        "journey",
+        "setbacks",
+        "return"
+      ]
     },
     {
       "id": "eric-solves-it",
-      "text": "Eric Dynamite solves the problem with an explosion, creating a considerably larger problem.",
+      "text": "Sharon solves the problem with an explosion, creating a considerably larger problem.",
       "suits": [
-        "falling apart",
-        "the scramble"
+        "panic",
+        "setbacks"
       ]
     },
     {
       "id": "lol-swarm",
       "text": "The LOL dolls arrive in a swarm and use up the thing everyone needed.",
-      "suits": []
+      "suits": [
+        "journey",
+        "setbacks"
+      ]
     },
     {
       "id": "sharon-starts-early",
       "text": "Sharon the party crow decides the party starts now, several hours early, at full volume.",
-      "suits": []
+      "suits": [
+        "panic",
+        "friction",
+        "arrival"
+      ]
     },
     {
       "id": "pamela-unchecked",
       "text": "Pamela does something enormous and chaotic that only Frank could have talked her out of.",
-      "suits": []
+      "suits": [
+        "panic",
+        "friction",
+        "arrival",
+        "journey",
+        "setbacks"
+      ]
     },
     {
       "id": "zapper-wrong-target",
       "text": "The Brain Zapper 3000 goes off, pointed at entirely the wrong person.",
-      "suits": []
+      "suits": [
+        "friction",
+        "arrival",
+        "journey",
+        "setbacks"
+      ]
     }
   ],
   "currentScene": {

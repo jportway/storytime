@@ -195,9 +195,14 @@ steers the story and hands her back something of hers; it is the only lever
 here that doesn't spend a little of her authorship to buy control. Authored
 trouble cards, edited in `/admin`, are the fallback.
 
-**Stories end.** Five phases at a two-beat ceiling puts the landing at around
-beat ten. The last beat resolves instead of forking (`[LANDING]`) and she is
-asked whether that was the end. If she says yes the book is named — at the
+**Stories end, but they are not hurried to it.** Around sixteen beats is
+normal and twenty is fine; ten turned out to be an anecdote rather than a
+story. The pace comes from the director judging when a phase has done its
+work, with a per-phase ceiling as a backstop against idling. That ceiling is
+derived from the arc rather than fixed, because arcs are authored in `/admin`
+and don't all have the same number of phases — otherwise the phase count
+would silently decide how long a story is. The last beat resolves instead of
+forking (`[LANDING]`) and she is asked whether that was the end. If she says yes the book is named — at the
 end, because that is the first moment there is anything to name — and goes on
 the shelf. If she says keep going, a different arc is dealt and the story
 carries on with no visible seam, so one session can hold several complete

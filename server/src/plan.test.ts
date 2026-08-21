@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { makeGrimwoodBible, type Arc, type StoryPlan } from '@storytime/shared';
+import {
+  GRIMWOOD_TEMPLATE,
+  makeGrimwoodBible,
+  type Arc,
+  type StoryPlan,
+} from '@storytime/shared';
 import {
   applyPlanUpdate,
   availableTrouble,
@@ -102,31 +107,53 @@ describe('applyPlanUpdate', () => {
   });
 
   it('moves the story on when a phase has run too long', () => {
+    // Three phases against a target of 16 gives a ceiling of six beats each.
     let plan = dealArc([arcs()[0]!], 0)!;
-    // Never says the phase is complete; the clamp has to do it.
-    plan = applyPlanUpdate(plan, update(), 1);
-    expect(plan.phase).toBe(0);
-    plan = applyPlanUpdate(plan, update(), 2);
+    for (let beat = 1; beat < 6; beat += 1) {
+      plan = applyPlanUpdate(plan, update(), beat);
+      expect(plan.phase).toBe(0);
+    }
+    plan = applyPlanUpdate(plan, update(), 6);
     expect(plan.phase).toBe(1);
   });
 
-  it('reaches the end in about ten beats even if told nothing useful', () => {
-    // Five phases is the shape every seeded arc uses, and a director that
-    // never commits to a phase being finished is the realistic case.
-    const fivePhase: Arc = {
-      id: 'five',
-      name: 'Five',
-      destination: 'somewhere',
-      phases: [1, 2, 3, 4, 5].map((n) => ({ name: `p${n}`, intent: 'x' })),
-    };
-    let plan = dealArc([fivePhase], 0)!;
+  it('lets a story run 15–20 beats when nothing tells it to move on', () => {
+    // The realistic case: a director that never commits to a phase being
+    // finished, so the backstop alone decides. Both arc shapes in play — the
+    // seeded five-phase ones and Cooperworld's eight-phase party arc — have
+    // to land in the same comfortable range, which is the whole reason the
+    // ceiling is derived from the arc rather than fixed.
+    for (const phaseCount of [3, 5, 8]) {
+      const arc: Arc = {
+        id: `a${phaseCount}`,
+        name: 'Shape',
+        destination: 'somewhere',
+        phases: Array.from({ length: phaseCount }, (_, i) => ({
+          name: `p${i}`,
+          intent: 'x',
+        })),
+      };
+      let plan = dealArc([arc], 0)!;
+      let landedAt = 0;
+      for (let beat = 1; beat <= 60 && !landedAt; beat += 1) {
+        plan = applyPlanUpdate(plan, update({ phaseComplete: false }), beat);
+        if (plan.landing) landedAt = beat;
+      }
+      expect(landedAt).toBeGreaterThanOrEqual(13);
+      expect(landedAt).toBeLessThanOrEqual(20);
+    }
+  });
+
+  it('still lets the director bring a story home early', () => {
+    // Ten was too short as a default, but a story that genuinely finishes
+    // its shape quickly should not be padded out to sixteen.
+    let plan = dealArc([arcs()[0]!], 0)!;
     let landedAt = 0;
-    for (let beat = 1; beat <= 20 && !landedAt; beat += 1) {
-      plan = applyPlanUpdate(plan, update({ phaseComplete: false }), beat);
+    for (let beat = 1; beat <= 30 && !landedAt; beat += 1) {
+      plan = applyPlanUpdate(plan, update({ phaseComplete: true }), beat);
       if (plan.landing) landedAt = beat;
     }
-    expect(landedAt).toBeGreaterThanOrEqual(9);
-    expect(landedAt).toBeLessThanOrEqual(11);
+    expect(landedAt).toBe(3);
   });
 
   it('does not drift: the destination survives a whole story', () => {
@@ -288,5 +315,41 @@ describe('availableTrouble', () => {
 
     bible.plan = { ...bible.plan!, phase: 2 };
     expect(availableTrouble(bible)).toHaveLength(1);
+  });
+});
+
+describe('the shipped template', () => {
+  it('has no trouble card that can never be played', () => {
+    // `suits` is matched against phase names by string equality, so a typo or
+    // a leftover from a deleted arc doesn't error — the card simply never
+    // comes up, for the life of the template. This has already happened once:
+    // "setbakcs" for "setbacks", and two suits still naming phases from arcs
+    // that had been replaced.
+    const phases = new Set(
+      (GRIMWOOD_TEMPLATE.arcs ?? []).flatMap((a) =>
+        (a.phases ?? []).map((p) => p.name),
+      ),
+    );
+
+    const unplayable = (GRIMWOOD_TEMPLATE.trouble ?? [])
+      .filter((c) => c.suits?.length)
+      .map((c) => ({
+        id: c.id,
+        stale: c.suits.filter((s) => !phases.has(s)),
+      }))
+      .filter((c) => c.stale.length > 0);
+
+    expect(unplayable).toEqual([]);
+  });
+
+  it('has arcs whose phases all say what they are for', () => {
+    for (const arc of GRIMWOOD_TEMPLATE.arcs ?? []) {
+      expect(arc.destination.trim()).not.toBe('');
+      expect(arc.phases.length).toBeGreaterThan(1);
+      for (const phase of arc.phases) {
+        expect(phase.name.trim()).not.toBe('');
+        expect(phase.intent.trim()).not.toBe('');
+      }
+    }
   });
 });

@@ -805,6 +805,32 @@ function renderTrouble() {
         'story are always preferred over these.',
     }),
   );
+
+  // Phase names are matched by exact string, so a typo doesn't error — the
+  // card just never comes up again. Listing the real ones, and calling out
+  // any that match nothing, makes that visible instead of silent.
+  const phaseNames = (bible.arcs || []).flatMap((a) => (a.phases || []).map((p) => p.name));
+  section.appendChild(
+    el('p', {
+      class: 'hint',
+      text: phaseNames.length
+        ? `Phases you can name: ${[...new Set(phaseNames)].join(', ')}`
+        : 'No arcs defined yet, so "suits" has nothing to match.',
+    }),
+  );
+
+  const stale = bible.trouble
+    .filter((c) => (c.suits || []).some((x) => !phaseNames.includes(x)))
+    .map((c) => c.id);
+  if (stale.length) {
+    section.appendChild(
+      el('p', {
+        class: 'hint',
+        style: 'color:#e0a0a0;',
+        text: `These name a phase that doesn't exist, so they can never be played: ${stale.join(', ')}`,
+      }),
+    );
+  }
   if (!bible.trouble.length) section.appendChild(el('p', { class: 'empty', text: 'None yet.' }));
 
   for (const c of bible.trouble) {

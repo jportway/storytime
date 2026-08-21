@@ -92,7 +92,8 @@ export async function planNext(
     `Phase ${plan.phase + 1} of ${plan.phases.length}: ${phase?.name ?? 'the end'}`,
     `What this phase is for: ${phase?.intent ?? 'bringing it to rest'}`,
     `Beats spent in this phase: ${plan.beatsInPhase}`,
-    `Beat ${beatNumber} of about ${TARGET_BEATS}.`,
+    `This is beat ${beatNumber}. A story here usually runs somewhere around ` +
+      `${TARGET_BEATS} beats, but that is a loose guide and never a deadline.`,
     plan.landing
       ? 'The story is landing. The next beat resolves it rather than forking.'
       : '',
