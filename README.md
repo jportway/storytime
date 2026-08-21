@@ -59,6 +59,13 @@ and Tier 2, so it loses on every axis that matters here.
 BUCKET=storytime-cooper-data
 REGION=europe-north2   # Stockholm: 100% carbon-free energy, and Tier 1 pricing
 
+# Not a credential — it just names which ElevenLabs voice Frank speaks in —
+# so it travels as a plain env var. It is easy to forget precisely because it
+# isn't a secret, and forgetting it is silent: hasElevenLabs() needs the key
+# *and* the voice, so the owl falls back to the browser voice and nothing
+# anywhere says why.
+VOICE_ID=$(grep '^ELEVENLABS_VOICE_ID=' .env | cut -d= -f2)
+
 # 1. One bucket for stories, the profile, the template and cached audio.
 #    Uniform access: nothing in here is public, it holds a child's writing.
 gcloud storage buckets create gs://$BUCKET --location=$REGION \
@@ -78,7 +85,7 @@ STORAGE_BUCKET=$BUCKET npm run seed-audio
 gcloud run deploy storytime --source . \
   --region=$REGION --allow-unauthenticated \
   --max-instances=1 --timeout=600 --memory=512Mi --cpu-boost \
-  --set-env-vars=STORAGE_BUCKET=$BUCKET \
+  --set-env-vars=STORAGE_BUCKET=$BUCKET,ELEVENLABS_VOICE_ID=$VOICE_ID \
   --set-secrets=ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest,\
 ELEVENLABS_API_KEY=ELEVENLABS_API_KEY:latest,\
 APP_PASSWORD=APP_PASSWORD:latest,\
