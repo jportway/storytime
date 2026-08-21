@@ -99,8 +99,23 @@ export function WritingBox({
             }
           }}
           placeholder={placeholder}
+          // The whole spelling engine depends on her mistakes reaching the
+          // server intact. autocorrect defaults to ON for an editable element
+          // outside a <form>, so on an iPad iOS was quietly fixing her words
+          // before we ever saw them — 59 turns produced zero recorded b/d
+          // reversals, which for Cooper is not a plausible number.
+          //
+          // autoCorrect stops the silent rewriting; autoCapitalize stops the
+          // keyboard deciding where her sentences begin. spellCheck was
+          // already off, but that only ever governed the red underline.
+          //
+          // The predictive bar above the keys is not reachable from here —
+          // it is a device setting — but it needs a deliberate tap, so it
+          // changes her words only when she chooses to.
           spellCheck={false}
           autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="none"
           disabled={streaming}
           rows={1}
           aria-label="What happens next?"
