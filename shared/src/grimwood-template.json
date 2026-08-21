@@ -499,10 +499,27 @@
         "ridiculous",
         "silly"
       ],
-      "wants": "to marry cooper",
-      "description": "Basically the real Henry the 8th. Very confused about what he's doing in a child's story in the modern world instead of being a monarch in tudor england. A pretty horrible person, but in a funny way (think Horrible Histories style). ",
+      "wants": "to marry cooper, to eat pretty much anything edible he comes across",
+      "description": "Basically the real Henry the 8th. Very confused about what he's doing in a child's story in the modern world instead of being a monarch in tudor england. A pretty horrible person, but in a funny way (think Horrible Histories style). He is also always hungry and may need to be forcibly dissuaded from snacking on the minor characters",
       "appearance": "",
       "voice": "pompous and arrogant. ",
+      "examples": [],
+      "status": "fine",
+      "location": "castle",
+      "carrying": [],
+      "relationships": [],
+      "secrets": []
+    },
+    {
+      "id": "twilight",
+      "name": "princess twilight sparkle",
+      "role": "friend",
+      "createdBy": "ai",
+      "traits": [],
+      "wants": "everyone to be friends",
+      "description": "a My LIttle Pony princess. Can be in human or pony form - slightly unstably shifts between the two if she gets a shock or over excited, which is a source of some embarrasement to her. Understands the power of friendship. Has some magical abilities, but is still learning so her spells often don't turn out quite as she intended.",
+      "appearance": "",
+      "voice": "high pitched cartoon voice. Often breaks into song",
       "examples": [],
       "status": "fine",
       "location": "limbo",
@@ -570,7 +587,9 @@
       "description": "This is Cooper's home, and the real home to all the toys and imaginary characters that make up the story. The room contains a bunk bed and several huge overflowing boxes and baskets of soft toys — Cooper's friends, with which she builds her imaginary worlds.",
       "appearance": "Absolute chaos — toys and clothes everywhere.",
       "createdBy": "ai",
-      "connectsTo": []
+      "connectsTo": [
+        "time-toilet"
+      ]
     },
     {
       "id": "time-toilet",
@@ -589,6 +608,36 @@
       "appearance": "",
       "createdBy": "ai",
       "connectsTo": []
+    },
+    {
+      "id": "ponyville",
+      "name": "ponyville",
+      "description": "The village of the My Little Ponies, everything is brightly coloured and happy looking. The grimwood characters feel a bit out of place here, because they are not colourful and happy looking enough",
+      "appearance": "",
+      "createdBy": "ai",
+      "connectsTo": [
+        "time-toilet"
+      ]
+    },
+    {
+      "id": "jurassic",
+      "name": "jurassic forest",
+      "description": "A jurassic forest, full of the type of dinosaurs you might find in Jurassic Park (velociraptors, T rex, etc.). Extremely dangerous - everyone better try to get out of here as soon as possible. ",
+      "appearance": "",
+      "createdBy": "ai",
+      "connectsTo": [
+        "time-toilet"
+      ]
+    },
+    {
+      "id": "castle",
+      "name": "Henry's castle",
+      "description": "The castle of Henry the Eighth in Tudor England. The animals will have to sneak around because the humans here won't really understand the idea of Talking animals etc. and are generally pretty agressive, apart from Henry himself who wants to marry Cooper - but even he can often be a bit peckish and needs to be restrained from snacking on some of the other minor characters. ",
+      "appearance": "",
+      "createdBy": "ai",
+      "connectsTo": [
+        "time-toilet"
+      ]
     }
   ],
   "things": [
