@@ -172,6 +172,12 @@ export class Session {
    * opens a chapter of its own accord because the story has turned a corner.
    */
   continuePastLanding(): void {
+    // She answered, so that beat is no longer a question. Left set, reopening
+    // the story off the shelf would ask "is that the end?" all over again,
+    // because that flag is exactly what the client restores the choice from.
+    const last = this.bible.beats[this.bible.beats.length - 1];
+    if (last) delete last.landing;
+
     const finished = this.bible.plan?.arcId ?? null;
     this.bible.arcsCompleted = (this.bible.arcsCompleted ?? 0) + 1;
     this.bible.plan = dealArc(

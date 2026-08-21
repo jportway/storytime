@@ -629,12 +629,6 @@ button:disabled {
     padding 0.16s ease;
 }
 
-.composer-pill.composer-expanded {
-  display: block;
-  border-radius: var(--radius-field);
-  border-color: var(--accent);
-  padding: 14px 20px;
-}
 
 .composer-pill.composer-streaming {
   background: var(--panel-muted);
@@ -665,11 +659,6 @@ button:disabled {
   background: transparent;
 }
 
-.composer-expanded .writing-mirror,
-.composer-expanded .writing-input {
-  font-size: 20px;
-  line-height: 1.6;
-}
 
 .writing-mirror {
   position: absolute;
@@ -717,19 +706,6 @@ button:disabled {
   border-bottom-color: var(--mark-reversal);
 }
 
-.composer-hint-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.composer-hint {
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--ink-45);
-}
 
 .send {
   flex: none;
@@ -741,9 +717,6 @@ button:disabled {
   padding: 15px 30px;
 }
 
-.composer-expanded .send {
-  padding: 14px 28px;
-}
 
 .send:disabled {
   background: var(--accent-soft);

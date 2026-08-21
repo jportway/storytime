@@ -49,8 +49,6 @@ export function App() {
   const [whatsNew, setWhatsNew] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  /** Collapsed pill vs the multi-line field. */
-  const [composerExpanded, setComposerExpanded] = useState(false);
   /** The chapter currently being written, as soon as its marker arrives. */
   const [liveChapter, setLiveChapter] = useState<string | null>(null);
   /**
@@ -227,7 +225,6 @@ export function App() {
       const direction = text ?? draft;
       if (!bible || !direction.trim()) return;
       setDraft('');
-      setComposerExpanded(false);
       setGate(null);
       gateDraftRef.current = null;
       rejectedGuesses.current = {};
@@ -701,8 +698,6 @@ export function App() {
           findings={owl.findings}
           disabled={writing || checkingSend}
           streaming={writing}
-          expanded={composerExpanded || Boolean(draft)}
-          onExpandedChange={setComposerExpanded}
         />
       </div>
       )}
